@@ -1,4 +1,4 @@
-# RecSysDatasetAnalyzer
+# RecSys Dataset Analyzer
 
 Analyzer for the properties of public recommendation datasets.
 
