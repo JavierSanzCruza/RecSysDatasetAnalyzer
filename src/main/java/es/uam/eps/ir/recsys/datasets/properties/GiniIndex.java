@@ -83,15 +83,15 @@ public class GiniIndex
     public double computeGini(List<Long> pops)
     {
         double gini = 0.0;
+        int size = pops.size();
+        double sum = pops.stream().mapToDouble(x -> x).sum();
         for(int i = 0; i < pops.size(); ++i)
         {
-            int j = pops.size();
-
-            double val = (2.0*j - ratingMatrix.getNumItems() - 1.0)*pops.get(i);
-            val /= (this.ratingMatrix.getNumRatings() + 0.0);
+            double val = (2.0*(size-i) - size - 1.0)*pops.get(i);
+            val /= sum;
             gini += val;
         }
 
-        return gini / (ratingMatrix.getNumItems() - 1.0);
+        return gini / (size - 1.0);
     }
 }

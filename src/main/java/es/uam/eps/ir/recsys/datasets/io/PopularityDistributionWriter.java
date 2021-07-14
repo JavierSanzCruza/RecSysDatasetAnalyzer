@@ -39,6 +39,7 @@ public class PopularityDistributionWriter
             for(long val : distrib)
             {
                 bw.write("\n" + i + "\t" + val);
+                ++i;
             }
         }
     }
@@ -59,6 +60,7 @@ public class PopularityDistributionWriter
             for(long val : distrib)
             {
                 bw.write("\n" + i + "\t" + val);
+                ++i;
             }
         }
     }
@@ -73,12 +75,13 @@ public class PopularityDistributionWriter
     {
         try(BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file))))
         {
-            bw.write("Item Id\tNum. Ratings");
+            bw.write("User Id\tNum. Ratings");
             List<Long> distrib = stats.getUserDistribution();
             int i = 0;
             for(long val : distrib)
             {
                 bw.write("\n" + i + "\t" + val);
+                ++i;
             }
         }
     }
@@ -93,12 +96,13 @@ public class PopularityDistributionWriter
     {
         try(BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file))))
         {
-            bw.write("Item Id\tNum. Ratings");
+            bw.write("User Id\tNum. Ratings");
             List<Long> distrib = stats.getRelevantUserDistribution();
             int i = 0;
             for(long val : distrib)
             {
                 bw.write("\n" + i + "\t" + val);
+                ++i;
             }
         }
     }

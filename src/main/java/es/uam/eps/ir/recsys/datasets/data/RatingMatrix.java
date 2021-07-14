@@ -152,7 +152,7 @@ public class RatingMatrix
                 // Here, we do not update the number of ratings:
                 boolean oldRel = (oldval > 0);
                 user2itemMatrix.get(userId).put(itemId, val + oldval);
-                item2userMatrix.get(userId).put(userId, val + oldval);
+                item2userMatrix.get(itemId).put(userId, val + oldval);
 
                 if(!oldRel && rel) this.numRelRatings++;
                 return AddingReturn.UPDATED;
@@ -164,7 +164,7 @@ public class RatingMatrix
 
                 if(!oldRel && rel) this.numRelRatings++;
                 user2itemMatrix.get(userId).put(itemId, val);
-                item2userMatrix.get(userId).put(userId, val);
+                item2userMatrix.get(itemId).put(userId, val);
 
                 return AddingReturn.UPDATED;
             }

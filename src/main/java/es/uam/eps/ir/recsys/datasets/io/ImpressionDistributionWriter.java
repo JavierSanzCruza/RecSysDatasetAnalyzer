@@ -33,12 +33,13 @@ public class ImpressionDistributionWriter
     {
         try(BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file))))
         {
-            bw.write("Item Id\tNum. Ratings");
+            bw.write("Item Id\tNum. Impressions");
             List<Long> distrib = stats.getItemDistribution();
             int i = 0;
             for(long val : distrib)
             {
                 bw.write("\n" + i + "\t" + val);
+                ++i;
             }
         }
     }
@@ -53,12 +54,13 @@ public class ImpressionDistributionWriter
     {
         try(BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file))))
         {
-            bw.write("Item Id\tNum. Ratings");
+            bw.write("User Id\tNum. Impressions");
             List<Long> distrib = stats.getUserDistribution();
             int i = 0;
             for(long val : distrib)
             {
                 bw.write("\n" + i + "\t" + val);
+                ++i;
             }
         }
     }

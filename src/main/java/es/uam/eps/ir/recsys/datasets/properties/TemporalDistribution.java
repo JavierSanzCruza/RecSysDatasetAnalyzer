@@ -71,7 +71,7 @@ public class TemporalDistribution
     {
         if(!isSorted)
         {
-            distribution.sort(Comparator.comparingLong(o -> o.v2));
+            distribution.sort(Comparator.comparingLong(o -> o.v3));
             isSorted = true;
         }
 
@@ -86,7 +86,7 @@ public class TemporalDistribution
     {
         if(!isSorted)
         {
-            distribution.sort(Comparator.comparingLong(o -> o.v2));
+            distribution.sort(Comparator.comparingLong(o -> o.v3));
             isSorted = true;
         }
 

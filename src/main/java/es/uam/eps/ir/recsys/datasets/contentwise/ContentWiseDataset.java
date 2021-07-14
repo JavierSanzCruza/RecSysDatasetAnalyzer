@@ -8,6 +8,7 @@
  */
 package es.uam.eps.ir.recsys.datasets.contentwise;
 
+import es.uam.eps.ir.recsys.datasets.data.AddingReturn;
 import es.uam.eps.ir.recsys.datasets.data.Impressions;
 import es.uam.eps.ir.recsys.datasets.data.RatingMatrix;
 import es.uam.eps.ir.recsys.datasets.properties.TemporalDistribution;
@@ -140,18 +141,18 @@ public class ContentWiseDataset
                 impr.addUser(userId);
                 impr.addItem(seriesId);
 
-                user2item.addRating(userId, itemId, 1.0);
-                user2series.addRating(userId, seriesId, 1.0);
-                user2itemTS.addTimepoint(userId, itemId, ts);
-                user2seriesTS.addTimepoint(userId, seriesId, ts);
+                AddingReturn retItem = user2item.addRating(userId, itemId, 1.0);
+                AddingReturn retSeries = user2series.addRating(userId, seriesId, 1.0);
+                if(retItem == AddingReturn.ADDED) user2itemTS.addTimepoint(userId, itemId, ts);
+                if(retSeries == AddingReturn.ADDED) user2seriesTS.addTimepoint(userId, seriesId, ts);
 
                 if (fromImpr)
                 {
                     rec2user.put(recId, userId);
-                    user2item.addRating(userId, itemId, 1.0);
-                    user2series.addRating(userId, seriesId, 1.0);
-                    user2itemTS.addTimepoint(userId, itemId, ts);
-                    user2seriesTS.addTimepoint(userId, seriesId, ts);
+                    retItem = user2itemImpr.addRating(userId, itemId, 1.0);
+                    retSeries = user2seriesImpr.addRating(userId, seriesId, 1.0);
+                    if(retItem == AddingReturn.ADDED) user2itemImprTS.addTimepoint(userId, itemId, ts);
+                    if(retSeries == AddingReturn.ADDED) user2seriesImprTS.addTimepoint(userId, seriesId, ts);
                 }
             }
         }
@@ -166,17 +167,20 @@ public class ContentWiseDataset
                 String list = record.get("recommended_series_list");
 
                 String actualList = list.substring(1,list.length()-1);
-                String[] impressions = actualList.split("\\P{Alpha}+");
+                String[] impressions = actualList.split("\\s+");
                 for(String impression : impressions)
                 {
-                    int seriesId = Integer.parseInt(impression);
-                    impr.addImpression(rec2user.get(recId), seriesId);
+                    if(!impression.equalsIgnoreCase(""))
+                    {
+                        int seriesId = Integer.parseInt(impression);
+                        impr.addImpression(rec2user.get(recId), seriesId);
+                    }
                 }
             }
         }
 
         // Read the impressions without interactions.
-        try(Reader in = new FileReader(impressionsDirectLinkFile))
+        try(Reader in = new FileReader(impressionsNoDirectLinkFile))
         {
             Iterable<CSVRecord> records = CSVFormat.DEFAULT.withHeader(impressionsNoDirectLinkFile).withFirstRecordAsHeader().parse(in);
             for(CSVRecord record : records)

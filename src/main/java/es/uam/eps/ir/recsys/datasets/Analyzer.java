@@ -24,21 +24,29 @@ public class Analyzer
     {
         // ContentWise impressions:
 
-        switch(args[0])
+        switch (args[0])
         {
-            case CONTENTWISE:
+            case CONTENTWISE ->
             {
+                long timea = System.currentTimeMillis();
+
                 String inter = args[1];
                 String imprDirect = args[2];
                 String imprNoDirect = args[3];
 
                 ContentWiseDataset dataset = ContentWiseDataset.load(inter, imprDirect, imprNoDirect);
 
+                long timeb = System.currentTimeMillis();
+                System.err.println("Data read (" + (timeb - timea) + "ms.)");
+
                 // Print and find the impressions:
                 ContentWiseImpressionStatistics stats = new ContentWiseImpressionStatistics(dataset);
                 StatisticsWriter writer = new StatisticsWriter();
 
                 writer.write(stats, args[4] + "stats.txt");
+
+                timeb = System.currentTimeMillis();
+                System.err.println("Stats computed (" + (timeb - timea) + " ms.)");
 
                 // Now, we do print the popularity distributions:
                 PopularityDistributionWriter popWriter = new PopularityDistributionWriter();
@@ -55,34 +63,53 @@ public class Analyzer
                 pop = new PopularityDistribution(dataset.getUser2SeriesInteractionsFromImpressions());
                 popWriter.writeItemDistribution(pop, args[4] + "pop-user-series-impr.txt");
 
+                timeb = System.currentTimeMillis();
+                System.err.println("Popularity distributions computed (" + (timeb - timea) + " ms.)");
+
                 // Now, we do print the distributions for the impressions (number of points / ..)
                 ImpressionDistributionWriter imprWriter = new ImpressionDistributionWriter();
                 ImpressionDistribution impr = new ImpressionDistribution(dataset.getImpressions());
                 imprWriter.writeUserDistribution(impr, "impr-user.txt");
                 imprWriter.writeItemDistribution(impr, "impr-item.txt");
 
+                timeb = System.currentTimeMillis();
+                System.err.println("Impression distributions computed (" + (timeb - timea) + " ms.)");
 
                 // and the distribution of timestamps:
                 TemporalDistributionWriter tempWriter = new TemporalDistributionWriter();
                 // a) For the users:
                 TemporalDistribution temp = dataset.getUser2ItemTemporalDistrib();
-                tempWriter.writeUserDistribution(temp, args[4] + "time-users.txt");
-                tempWriter.writeItemDistribution(temp, args[4] + "time-items.txt");
+                tempWriter.writeUserDistribution(temp, args[4] + "time-users.txt", true);
+                tempWriter.writeItemDistribution(temp, args[4] + "time-items.txt", true);
                 temp = dataset.getUser2SeriesTemporalDistrib();
-                tempWriter.writeItemDistribution(temp, args[4] + "time-series.txt");
+                tempWriter.writeItemDistribution(temp, args[4] + "time-series.txt", true);
 
                 temp = dataset.getUser2ItemWithImpressionsTemporalDistrib();
-                tempWriter.writeUserDistribution(temp, args[4] + "time-users-impressions.txt");
-                tempWriter.writeItemDistribution(temp, args[4] + "time-items-impressions.txt");
+                tempWriter.writeUserDistribution(temp, args[4] + "time-users-impressions.txt", true);
+                tempWriter.writeItemDistribution(temp, args[4] + "time-items-impressions.txt", true);
                 temp = dataset.getUser2SeriesWithImpressionsTemporalDistrib();
-                tempWriter.writeItemDistribution(temp, args[4] + "time-series-impressions.txt");
+                tempWriter.writeItemDistribution(temp, args[4] + "time-series-impressions.txt", true);
 
 
+                temp = dataset.getUser2ItemTemporalDistrib();
+                tempWriter.writeUserDistribution(temp, args[4] + "time-users-inv.txt", false);
+                tempWriter.writeItemDistribution(temp, args[4] + "time-items-inv.txt", false);
+                temp = dataset.getUser2SeriesTemporalDistrib();
+                tempWriter.writeItemDistribution(temp, args[4] + "time-series-inv.txt", false);
 
+                temp = dataset.getUser2ItemWithImpressionsTemporalDistrib();
+                tempWriter.writeUserDistribution(temp, args[4] + "time-users-impressions-inv.txt", false);
+                tempWriter.writeItemDistribution(temp, args[4] + "time-items-impressions-inv.txt", false);
+                temp = dataset.getUser2SeriesWithImpressionsTemporalDistrib();
+                tempWriter.writeItemDistribution(temp, args[4] + "time-series-impressions-inv.txt", false);
+
+
+                timeb = System.currentTimeMillis();
+                System.err.println("Temporal distributions computed (" + (timeb - timea) + " ms.)");
             }
-            default:
+            default ->
             {
-                System.err.println("ERROR: The dataset you are trying to optimize is not correct.");
+                System.err.println("ERROR: The dataset you are trying to analyze is not correct.");
             }
         }
     }

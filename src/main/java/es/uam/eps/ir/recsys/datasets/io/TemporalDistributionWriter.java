@@ -15,7 +15,10 @@ import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Writes the temporal distribution of a dataset.
@@ -30,10 +33,10 @@ public class TemporalDistributionWriter
      * @param file      the file in which to store the popularity distribution.
      * @throws IOException if something fails while writing the popularity distribution.
      */
-    public void writeItemDistribution(TemporalDistribution stats, String file) throws IOException
+    public void writeItemDistribution(TemporalDistribution stats, String file, boolean byFirst) throws IOException
     {
         List<Tuple2<Integer, Long>> distrib = stats.getItemDistribution();
-        writeDistribution(file, distrib);
+        writeDistribution(file, distrib, byFirst);
     }
 
     /**
@@ -42,27 +45,48 @@ public class TemporalDistributionWriter
      * @param file      the file in which to store the popularity distribution.
      * @throws IOException if something fails while writing the popularity distribution.
      */
-    public void writeUserDistribution(TemporalDistribution stats, String file) throws IOException
+    public void writeUserDistribution(TemporalDistribution stats, String file, boolean byFirst) throws IOException
     {
         List<Tuple2<Integer, Long>> distrib = stats.getUserDistribution();
-        writeDistribution(file, distrib);
+        writeDistribution(file, distrib, byFirst);
     }
 
     /**
      * Writes the popularity distribution.
      * @param file      the file in which to store it.
      * @param distrib   the distribution.
+     * @param byFirst   sorts the elements by the first timestamp if true, by the last if false.
      * @throws IOException if something fails while writing
      */
-    private void writeDistribution(String file, List<Tuple2<Integer, Long>> distrib) throws IOException
+    private void writeDistribution(String file, List<Tuple2<Integer, Long>> distrib, boolean byFirst) throws IOException
     {
+        Map<Integer, Integer> transform = new HashMap<>();
+
         try(BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file))))
         {
-            bw.write("Timestamp\tItemId");
-            int i = 0;
-            for(Tuple2<Integer, Long> val : distrib)
+            bw.write("Id\tTimestamp");
+            if(byFirst)
             {
-                bw.write("\n" + val.v1 + "\t" + val.v2);
+                for (Tuple2<Integer, Long> val : distrib)
+                {
+                    if (!transform.containsKey(val.v1))
+                    {
+                        transform.put(val.v1, transform.size());
+                    }
+                    bw.write("\n" + transform.get(val.v1) + "\t" + val.v2);
+                }
+            }
+            else
+            {
+                for(int i = distrib.size()-1; i >= 0; --i)
+                {
+                    Tuple2<Integer, Long> val = distrib.get(i);
+                    if (!transform.containsKey(val.v1))
+                    {
+                        transform.put(val.v1, transform.size());
+                    }
+                    bw.write("\n" + transform.get(val.v1) + "\t" + val.v2);
+                }
             }
         }
     }
