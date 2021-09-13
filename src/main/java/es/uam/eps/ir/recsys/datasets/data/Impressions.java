@@ -86,6 +86,7 @@ public class Impressions
                 userImpressions.get(userId).add(itemId);
                 itemImpressions.get(itemId).add(userId);
                 numImpressions++;
+                return AddingReturn.ADDED;
             }
         }
 
