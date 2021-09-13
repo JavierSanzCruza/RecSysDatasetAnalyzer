@@ -53,11 +53,11 @@ public class TemporalDistribution
         this.distribution.add(new Tuple3<>(user, item, timestamp));
         this.isSorted = false;
 
-        if(minTimestamp < timestamp)
+        if(minTimestamp > timestamp)
         {
             minTimestamp = timestamp;
         }
-        if(maxTimestamp > timestamp)
+        if(maxTimestamp < timestamp)
         {
             maxTimestamp = timestamp;
         }
