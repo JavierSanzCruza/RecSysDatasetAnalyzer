@@ -17,6 +17,8 @@ __copyright__ = """
 __license__ = 'Mozilla Public License v. 2.0'
 
 import math
+from functools import reduce
+
 from .adding_return import AddingReturn
 from ..utils.optional import Optional
 
@@ -128,6 +130,52 @@ class RatingMatrix:
         :return: the number of ratings (not repeated).
         """
         return self.num_ratings
+
+    def get_num_user_ratings(self, user_id):
+        """
+        Obtains the number of ratings of a user (not repeated)
+        :param user_id: the identifier of the user.
+        :return: the number of ratings of the user (not repeated)
+        """
+        if self.user_2_item_matrix.__contains__(user_id):
+            return len(self.user_2_item_matrix.get(user_id))
+        return 0
+
+    def get_num_user_rel_ratings(self, user_id):
+        """
+        Obtains the number of ratings of a user (not repeated)
+        :param user_id: the identifier of the user.
+        :return: the number of ratings of the user (not repeated)
+        """
+        if self.user_2_item_matrix.__contains__(user_id):
+            return reduce(lambda x, y: x + 1,
+                          map(lambda x: 1,
+                              filter(lambda item, rating: self.is_relevant(rating),
+                                     self.user_2_item_matrix.get(user_id).items())))
+        return 0
+
+    def get_num_item_ratings(self, item_id):
+        """
+        Obtains the number of ratings of a item (not repeated)
+        :param item_id: the identifier of the item.
+        :return: the number of ratings of the item (not repeated)
+        """
+        if self.item_2_user_matrix.__contains__(item_id):
+            return len(self.item_2_user_matrix.get(item_id))
+        return 0
+
+    def get_num_item_rel_ratings(self, item_id):
+        """
+        Obtains the number of ratings of a user (not repeated)
+        :param item_id: the identifier of the user.
+        :return: the number of ratings of the user (not repeated)
+        """
+        if self.item_2_user_matrix.__contains__(item_id):
+            return reduce(lambda x, y: x + 1,
+                          map(lambda x: 1,
+                              filter(lambda user, rating: self.is_relevant(rating),
+                                     self.item_2_user_matrix.get(item_id).items())))
+        return 0
 
     def get_num_rel_ratings(self):
         """
