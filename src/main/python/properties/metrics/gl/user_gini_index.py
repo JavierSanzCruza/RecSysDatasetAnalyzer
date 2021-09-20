@@ -16,6 +16,7 @@ __copyright__ = """
 """
 __license__ = 'Mozilla Public License v. 2.0'
 
+from src.main.python.properties.distributions.popularity_distribution import PopularityDistribution
 from src.main.python.properties.gini_index import GiniIndex
 from .abstract_gini_index import AbstractGiniIndex
 
@@ -25,10 +26,10 @@ class UserGiniIndex(AbstractGiniIndex):
     Implementation of the Gini index, measured over the items. A value close to 1 means a highly skewed distribution,
     whereas values close to 0 indicate balanced ones.
     """
-    def compute_index(self, pop):
+    def compute_index(self, pop: PopularityDistribution) -> float:
         distr = pop.get_user_distribution()
         return GiniIndex.compute(distr, True, True)
 
-    def compute_relevant_index(self, pop):
+    def compute_relevant_index(self, pop) -> float:
         distr = pop.get_relevant_user_distribution()
         return GiniIndex.compute(distr, True, True)

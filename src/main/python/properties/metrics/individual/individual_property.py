@@ -16,36 +16,36 @@ __copyright__ = """
 __license__ = 'Mozilla Public License v. 2.0'
 
 from abc import ABC, abstractmethod
-import math
+
+import typing
+
+from src.main.python.data import RatingMatrix
+
 
 class IndividualProperty(ABC):
+    """
+    Abstract class implementing individual properties of users, items and ratings.
+    """
+
+    def __init__(self, rating_matrix: RatingMatrix):
+        """
+        Constructor.
+        :param rating_matrix: the rating matrix over which the metric is computed.
+        """
+        self.rating_matrix = rating_matrix
 
     # Methods analyzing the whole rating matrix
 
     @abstractmethod
-    def total(self, rating_matrix):
-        """
-        Finds the total value of the property over all the possible ratings
-        :param rating_matrix: the rating matrix
-        :return: the total value.
-        """
-        pass
-
-    @abstractmethod
-    def total_relevant(self, rating_matrix):
+    def total(self,
+              relevant: bool = False,
+              user_filter: typing.Callable[[int], bool] = None,
+              item_filter: typing.Callable[[int], bool] = None,
+              rating_filter: typing.Callable[[int, int, float], bool] = None
+              ) -> float:
         """
         Finds the total value of the property over all the relevant ratings.
-        :param rating_matrix: the rating matrix.
-        :return: the total value.
-        """
-        pass
-
-    @abstractmethod
-    def total_filter(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                     rating_filter=lambda x: x):
-        """
-        Finds the total value of the property over all the relevant ratings.
-        :param rating_matrix: the rating matrix.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
         :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
         :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
         :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
@@ -53,31 +53,16 @@ class IndividualProperty(ABC):
         """
         pass
 
-
     @abstractmethod
-    def average(self, rating_matrix):
-        """
-        Finds the average value of the property over all the possible ratings
-        :param rating_matrix: the rating matrix
-        :return: the average value.
-        """
-        pass
-
-    @abstractmethod
-    def average_relevant(self, rating_matrix):
+    def average(self,
+                relevant: bool = False,
+                user_filter: typing.Callable[[int], bool] = None,
+                item_filter: typing.Callable[[int], bool] = None,
+                rating_filter: typing.Callable[[int, int, float], bool] = None
+                ) -> float:
         """
         Finds the average value of the property over all the relevant ratings.
-        :param rating_matrix: the rating matrix.
-        :return: the average value.
-        """
-        pass
-
-    @abstractmethod
-    def average_filter(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                       rating_filter=lambda x: x):
-        """
-        Finds the average value of the property over all the relevant ratings.
-        :param rating_matrix: the rating matrix.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
         :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
         :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
         :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
@@ -86,446 +71,410 @@ class IndividualProperty(ABC):
         pass
 
     @abstractmethod
-    def max(self, rating_matrix):
-        """
-        Finds the maximum value of the property over all the ratings.
-        :param rating_matrix: the rating matrix.
-        :return: the maximum value for the property.
-        """
-        pass
-
-    @abstractmethod
-    def max_relevant(self, rating_matrix):
+    def max(self,
+            relevant: bool = False,
+            user_filter: typing.Callable[[int], bool] = None,
+            item_filter: typing.Callable[[int], bool] = None,
+            rating_filter: typing.Callable[[int, int, float], bool] = None
+            ) -> float:
         """
         Finds the maximum value of the property over all the relevant ratings.
-        :param rating_matrix: the rating matrix.
-        :return: the maximum value for the property.
-        """
-        pass
-
-    @abstractmethod
-    def max_filter(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x, rating_filter=lambda x: x):
-        """
-        Finds the maximum value of the property over a selection of ratings.
-        :param rating_matrix: the rating matrix.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
         :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
         :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
         :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
-        :return: the maximum value for the property.
+        :return: the maximum value.
         """
         pass
 
     @abstractmethod
-    def min(self, rating_matrix):
-        """
-        Finds the minimum value of the property over all the ratings.
-        :param rating_matrix: the rating matrix.
-        :return: the minimum value for the property.
-        """
-        pass
-
-    @abstractmethod
-    def min_relevant(self, rating_matrix):
+    def min(self,
+            relevant: bool = False,
+            user_filter: typing.Callable[[int], bool] = None,
+            item_filter: typing.Callable[[int], bool] = None,
+            rating_filter: typing.Callable[[int, int, float], bool] = None
+            ) -> float:
         """
         Finds the minimum value of the property over all the relevant ratings.
-        :param rating_matrix: the rating matrix.
-        :return: the minimum value for the property.
-        """
-        pass
-
-    @abstractmethod
-    def min_filter(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x, rating_filter=lambda x: x):
-        """
-        Finds the minimum value of the property over a selection of ratings.
-        :param rating_matrix: the rating matrix.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
         :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
         :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
         :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
-        :return: the minimum value for the property.
+        :return: the minimum value.
         """
         pass
 
     # Methods for analyzing individual users:
 
     @abstractmethod
-    def total_users(self, rating_matrix):
+    def total_users(self,
+                    relevant: bool = False,
+                    user_filter: typing.Callable[[int], bool] = None,
+                    item_filter: typing.Callable[[int], bool] = None,
+                    rating_filter: typing.Callable[[int, int, float], bool] = None
+                    ) -> typing.Dict[int, float]:
         """
         Finds the total value of the property for the different users.
-        :param rating_matrix: the rating matrix.
-        :return: the total value for each user.
-        """
-        pass
-
-    @abstractmethod
-    def total_relevant_users(self, rating_matrix):
-        """
-        Finds the total value of the property for the different users (limited to the set of users).
-        :param rating_matrix: the rating matrix.
-        :return: the average value for each user.
-        """
-        pass
-
-    @abstractmethod
-    def total_filter_users(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                           rating_filter=lambda x: x):
-        """
-        Finds the total value of the property for the different users (limited to a set of ratings).
-        :param rating_matrix: the rating matrix.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
         :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
         :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
         :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
-        :return: the total value for each user.
+        :return: a map containing the total value of the property for each selected user.
         """
         pass
 
     @abstractmethod
-    def average_users(self, rating_matrix):
+    def average_users(self,
+                      relevant: bool = False,
+                      user_filter: typing.Callable[[int], bool] = None,
+                      item_filter: typing.Callable[[int], bool] = None,
+                      rating_filter: typing.Callable[[int, int, float], bool] = None
+                      ) -> typing.Dict[int, float]:
         """
         Finds the average value of the property for the different users.
-        :param rating_matrix: the rating matrix.
-        :return: the average value for each user.
-        """
-        pass
-
-    @abstractmethod
-    def average_relevant_users(self, rating_matrix):
-        """
-        Finds the average value of the property for the different users (limited to the set of users).
-        :param rating_matrix: the rating matrix.
-        :return: the average value for each user.
-        """
-        pass
-
-    @abstractmethod
-    def average_filter_users(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                             rating_filter=lambda x: x):
-        """
-        Finds the average value of the property for the different users (limited to a set of ratings).
-        :param rating_matrix: the rating matrix.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
         :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
         :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
         :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
-        :return: the average value for each user.
+        :return: a map containing the average value of the property for each selected user.
         """
         pass
 
     @abstractmethod
-    def max_users(self, rating_matrix):
+    def max_users(self,
+                  relevant: bool = False,
+                  user_filter: typing.Callable[[int], bool] = None,
+                  item_filter: typing.Callable[[int], bool] = None,
+                  rating_filter: typing.Callable[[int, int, float], bool] = None
+                  ) -> typing.Dict[int, float]:
         """
         Finds the maximum value of the property for the different users.
-        :param rating_matrix: the rating matrix.
-        :return: the maximum value of the property for each user.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
+        :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
+        :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
+        :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
+        :return: a map containing the maximum value of the property for each selected user.
         """
         pass
 
     @abstractmethod
-    def max_relevant_users(self, rating_matrix):
-        """
-        Finds the maximum value of the property to the different users (restricted to the set of relevant ratings)
-        :param rating_matrix: the rating matrix.
-        :return: the maximum value of the property for each user.
-        """
-        pass
-
-    @abstractmethod
-    def max_filter_users(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                         rating_filter=lambda x: x):
-        """
-        Finds the maximum value of the property for a selection of users, limited to some ratings.
-        :param rating_matrix: the rating matrix.
-        :param user_filter: (OPTIONAL) filter for selecting the users. By default, no filter is applied.
-        :param item_filter: (OPTIONAL) filter for selecting the items. By default, no filter is applied.
-        :param rating_filter: (OPTIONAL) filter for selecting the ratings. By default, no filter is applied.
-        :return: the maximum value for each user.
-        """
-        pass
-
-    @abstractmethod
-    def min_users(self, rating_matrix):
+    def min_users(self,
+                  relevant: bool = False,
+                  user_filter: typing.Callable[[int], bool] = None,
+                  item_filter: typing.Callable[[int], bool] = None,
+                  rating_filter: typing.Callable[[int, int, float], bool] = None
+                  ) -> typing.Dict[int, float]:
         """
         Finds the minimum value of the property for the different users.
-        :param rating_matrix: the rating matrix.
-        :return: the minimum value of the property for each user.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
+        :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
+        :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
+        :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
+        :return: a map containing the minimum value of the property for each selected user.
         """
         pass
 
     @abstractmethod
-    def min_relevant_users(self, rating_matrix):
+    def total_user(self,
+                   user: int,
+                   relevant: bool = False,
+                   item_filter: typing.Callable[[int], bool] = None,
+                   rating_filter: typing.Callable[[int, int, float], bool] = None
+                   ) -> float:
         """
-        Finds the minimum value of the property to the different users (restricted to the set of relevant ratings)
-        :param rating_matrix: the rating matrix.
-        :return: the minimum value of the property for each user.
-        """
-        pass
-
-    @abstractmethod
-    def min_filter_users(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                         rating_filter=lambda x: x):
-        """
-        Finds the minimum value of the property for a selection of users, limited to some ratings.
-        :param rating_matrix: the rating matrix.
-        :param user_filter: (OPTIONAL) filter for selecting the users. By default, no filter is applied.
+        Finds the total value of the property for a single user, limited to some ratings.
+        :param user: the identifier of the user.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
         :param item_filter: (OPTIONAL) filter for selecting the items. By default, no filter is applied.
         :param rating_filter: (OPTIONAL) filter for selecting the ratings. By default, no filter is applied.
-        :return: the minimum value for each user.
+        :return: the total value for the user.
         """
         pass
 
     @abstractmethod
-    def average_user(self, user_id, rating_matrix, item_filter=lambda x: x, rating_filter=lambda x: x):
+    def average_user(self,
+                     user: int,
+                     relevant: bool = False,
+                     item_filter: typing.Callable[[int], bool] = None,
+                     rating_filter: typing.Callable[[int, int, float], bool] = None
+                     ) -> float:
         """
         Finds the average value of the property for a single user, limited to some ratings.
-        :param user_id: the identifier of the user.
-        :param rating_matrix: the rating matrix.
+        :param user: the identifier of the user.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
         :param item_filter: (OPTIONAL) filter for selecting the items. By default, no filter is applied.
         :param rating_filter: (OPTIONAL) filter for selecting the ratings. By default, no filter is applied.
-        :return: the average value for each user.
+        :return: the average value for the user.
         """
         pass
 
     @abstractmethod
-    def max_user(self, user_id, rating_matrix, item_filter=lambda x: x, rating_filter=lambda x: x):
+    def max_user(self,
+                 user: int,
+                 relevant: bool = False,
+                 item_filter: typing.Callable[[int], bool] = None,
+                 rating_filter: typing.Callable[[int, int, float], bool] = None
+                 ) -> float:
         """
         Finds the maximum value of the property for a single user, limited to some ratings.
-        :param user_id: the identifier of the user.
-        :param rating_matrix: the rating matrix.
+        :param user: the identifier of the user.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
         :param item_filter: (OPTIONAL) filter for selecting the items. By default, no filter is applied.
         :param rating_filter: (OPTIONAL) filter for selecting the ratings. By default, no filter is applied.
-        :return: the maximum value for each user.
+        :return: the maximum value for the user.
         """
 
     @abstractmethod
-    def min_user(self, user_id, rating_matrix, item_filter=lambda x: x, rating_filter=lambda x: x):
+    def min_user(self,
+                 user: int,
+                 relevant: bool = False,
+                 item_filter: typing.Callable[[int], bool] = None,
+                 rating_filter: typing.Callable[[int, int, float], bool] = None
+                 ) -> float:
         """
         Finds the minimum value of the property for a single user, limited to some ratings.
-        :param user_id: the identifier of the user.
-        :param rating_matrix: the rating matrix.
+        :param user: the identifier of the user.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
         :param item_filter: (OPTIONAL) filter for selecting the items. By default, no filter is applied.
         :param rating_filter: (OPTIONAL) filter for selecting the ratings. By default, no filter is applied.
-        :return: the minimum value for each user.
+        :return: the minimum value for the user.
         """
         pass
 
     @abstractmethod
-    def average_over_users(self, rating_matrix):
+    def average_over_users(self,
+                           relevant: bool = False,
+                           user_filter: typing.Callable[[int], bool] = None,
+                           item_filter: typing.Callable[[int], bool] = None,
+                           rating_filter: typing.Callable[[int, int, float], bool] = None
+                           ) -> float:
         """
         Averages the value of the property over the users.
-        :param rating_matrix: the rating matrix.
+        :param relevant: True if we only consider relevant ratings, False otherwise.
+        :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
+        :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
+        :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
         :return: the average value over the users.
         """
         pass
 
     @abstractmethod
-    def average_over_users_relevant(self, rating_matrix):
+    def max_over_users(self,
+                       relevant: bool = False,
+                       user_filter: typing.Callable[[int], bool] = None,
+                       item_filter: typing.Callable[[int], bool] = None,
+                       rating_filter: typing.Callable[[int, int, float], bool] = None
+                       ) -> float:
         """
-        Averages the value of the property over the users (limited to the set of relevant ratings)
-        :param rating_matrix: the rating matrix.
-        :return: the average value over the users.
+        Obtains the maximum value of the property over the users.
+        :param relevant: True if we only consider relevant ratings, False otherwise.
+        :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
+        :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
+        :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
+        :return: the maximum value over the users.
         """
         pass
 
     @abstractmethod
-    def average_over_users_filter(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                                  rating_filter=lambda x: x):
+    def min_over_users(self,
+                       relevant: bool = False,
+                       user_filter: typing.Callable[[int], bool] = None,
+                       item_filter: typing.Callable[[int], bool] = None,
+                       rating_filter: typing.Callable[[int, int, float], bool] = None
+                       ) -> float:
         """
-        Averages the value of the property over a selection of users, limiting the selection of ratings used.
-        :param rating_matrix: the rating matrix.
-        :param user_filter: (OPTIONAL) filter for selecting the users. By default, no filter is applied.
-        :param item_filter: (OPTIONAL) filter for selecting the items. By default, no filter is applied.
-        :param rating_filter: (OPTIONAL) filter for selecting the ratings. By default, no filter is applied.
-        :return: the minimum value for each user.
+        Obtains the minimum value of the property over the users.
+        :param relevant: True if we only consider relevant ratings, False otherwise.
+        :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
+        :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
+        :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
+        :return: the minimum value over the users.
         """
         pass
 
     # Methods for analyzing individual items:
 
     @abstractmethod
-    def total_items(self, rating_matrix):
+    def total_items(self,
+                    relevant: bool = False,
+                    user_filter: typing.Callable[[int], bool] = None,
+                    item_filter: typing.Callable[[int], bool] = None,
+                    rating_filter: typing.Callable[[int, int, float], bool] = None
+                    ) -> typing.Dict[int, float]:
         """
         Finds the total value of the property for the different items.
-        :param rating_matrix: the rating matrix.
-        :return: the total value for each item.
-        """
-        pass
-
-    @abstractmethod
-    def total_relevant_items(self, rating_matrix):
-        """
-        Finds the total value of the property for the different items (limited to the set of relevant ratings).
-        :param rating_matrix: the rating matrix.
-        :return: the average value for each user.
-        """
-        pass
-
-    @abstractmethod
-    def total_filter_items(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                           rating_filter=lambda x: x):
-        """
-        Finds the total value of the property for the different items (limited to a set of ratings).
-        :param rating_matrix: the rating matrix.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
         :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
         :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
         :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
-        :return: the total value for each items.
+        :return: a map containing the total value of the property for each selected item.
         """
         pass
 
-
     @abstractmethod
-    def average_items(self, rating_matrix):
+    def average_items(self,
+                      relevant: bool = False,
+                      user_filter: typing.Callable[[int], bool] = None,
+                      item_filter: typing.Callable[[int], bool] = None,
+                      rating_filter: typing.Callable[[int, int, float], bool] = None
+                      ) -> typing.Dict[int, float]:
         """
         Finds the average value of the property for the different items.
-        :param rating_matrix: the rating matrix.
-        :return: the average value for each item.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
+        :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
+        :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
+        :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
+        :return: a map containing the average value of the property for each selected item.
         """
         pass
 
     @abstractmethod
-    def average_relevant_items(self, rating_matrix):
-        """
-        Finds the average value of the property to the different items (restricted to the set of relevant ratings)
-        :param rating_matrix: the rating matrix.
-        :return: the average value of the property for each item.
-        """
-        pass
-
-    @abstractmethod
-    def average_filter_items(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                             rating_filter=lambda x: x):
-        """
-        Finds the average value of the property for a selection of items, limited to some ratings.
-        :param rating_matrix: the rating matrix.
-        :param user_filter: (OPTIONAL) filter for selecting the users. By default, no filter is applied.
-        :param item_filter: (OPTIONAL) filter for selecting the items. By default, no filter is applied.
-        :param rating_filter: (OPTIONAL) filter for selecting the ratings. By default, no filter is applied.
-        :return: the average value for each item.
-        """
-        pass
-
-    @abstractmethod
-    def max_items(self, rating_matrix):
+    def max_items(self,
+                  relevant: bool = False,
+                  user_filter: typing.Callable[[int], bool] = None,
+                  item_filter: typing.Callable[[int], bool] = None,
+                  rating_filter: typing.Callable[[int, int, float], bool] = None
+                  ) -> typing.Dict[int, float]:
         """
         Finds the maximum value of the property for the different items.
-        :param rating_matrix: the rating matrix.
-        :return: the maximum value for each item.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
+        :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
+        :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
+        :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
+        :return: a map containing the maximum value of the property for each selected item.
         """
         pass
 
     @abstractmethod
-    def max_relevant_items(self, rating_matrix):
-        """
-        Finds the maximum value of the property to the different items (restricted to the set of relevant ratings)
-        :param rating_matrix: the rating matrix.
-        :return: the maximum value of the property for each item.
-        """
-        pass
-
-    @abstractmethod
-    def max_filter_items(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                         rating_filter=lambda x: x):
-        """
-        Finds the maximum value of the property for a selection of items, limited to some ratings.
-        :param rating_matrix: the rating matrix.
-        :param user_filter: (OPTIONAL) filter for selecting the users. By default, no filter is applied.
-        :param item_filter: (OPTIONAL) filter for selecting the items. By default, no filter is applied.
-        :param rating_filter: (OPTIONAL) filter for selecting the ratings. By default, no filter is applied.
-        :return: the maximum value for each item.
-        """
-        pass
-
-    def min_items(self, rating_matrix):
+    def min_items(self,
+                  relevant: bool = False,
+                  user_filter: typing.Callable[[int], bool] = None,
+                  item_filter: typing.Callable[[int], bool] = None,
+                  rating_filter: typing.Callable[[int, int, float], bool] = None
+                  ) -> typing.Dict[int, float]:
         """
         Finds the minimum value of the property for the different items.
-        :param rating_matrix: the rating matrix.
-        :return: the minimum value for each item.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
+        :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
+        :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
+        :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
+        :return: a map containing the minimum value of the property for each selected item.
         """
         pass
 
     @abstractmethod
-    def min_relevant_items(self, rating_matrix):
+    def total_item(self,
+                   item: int,
+                   relevant: bool = False,
+                   user_filter: typing.Callable[[int], bool] = None,
+                   rating_filter: typing.Callable[[int, int, float], bool] = None
+                   ) -> float:
         """
-        Finds the minimum value of the property to the different items (restricted to the set of relevant ratings)
-        :param rating_matrix: the rating matrix.
-        :return: the maximum value of the property for each item.
-        """
-        pass
-
-    @abstractmethod
-    def min_filter_items(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                         rating_filter=lambda x: x):
-        """
-        Finds the minimum value of the property for a selection of items, limited to some ratings.
-        :param rating_matrix: the rating matrix.
+        Finds the total value of the property for a single item, limited to some ratings.
+        :param item: the identifier of the item.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
         :param user_filter: (OPTIONAL) filter for selecting the users. By default, no filter is applied.
-        :param item_filter: (OPTIONAL) filter for selecting the items. By default, no filter is applied.
         :param rating_filter: (OPTIONAL) filter for selecting the ratings. By default, no filter is applied.
-        :return: the minimum value for each item.
+        :return: the total value for the item.
         """
         pass
 
     @abstractmethod
-    def average_item(self, item_id, rating_matrix, user_filter=lambda x: x, rating_filter=lambda x: x):
+    def average_item(self,
+                     item: int,
+                     relevant: bool = False,
+                     user_filter: typing.Callable[[int], bool] = None,
+                     rating_filter: typing.Callable[[int, int, float], bool] = None
+                     ) -> float:
         """
         Finds the average value of the property for a single item, limited to some ratings.
-        :param item_id: the identifier of the item.
-        :param rating_matrix: the rating matrix.
+        :param item: the identifier of the item.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
         :param user_filter: (OPTIONAL) filter for selecting the users. By default, no filter is applied.
         :param rating_filter: (OPTIONAL) filter for selecting the ratings. By default, no filter is applied.
-        :return: the average value for each user.
+        :return: the average value for the item.
         """
         pass
 
     @abstractmethod
-    def max_item(self, item_id, rating_matrix, user_filter=lambda x: x, rating_filter=lambda x: x):
+    def max_item(self,
+                 item: int,
+                 relevant: bool = False,
+                 user_filter: typing.Callable[[int], bool] = None,
+                 rating_filter: typing.Callable[[int, int, float], bool] = None
+                 ) -> float:
         """
         Finds the maximum value of the property for a single item, limited to some ratings.
-        :param item_id: the identifier of the item.
-        :param rating_matrix: the rating matrix.
+        :param item: the identifier of the item.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
         :param user_filter: (OPTIONAL) filter for selecting the users. By default, no filter is applied.
         :param rating_filter: (OPTIONAL) filter for selecting the ratings. By default, no filter is applied.
-        :return: the maximum value for each user.
+        :return: the maximum value for the item.
         """
-        pass
 
     @abstractmethod
-    def min_item(self, item_id, rating_matrix, user_filter=lambda x: x, rating_filter=lambda x: x):
+    def min_item(self,
+                 item: int,
+                 relevant: bool = False,
+                 user_filter: typing.Callable[[int], bool] = None,
+                 rating_filter: typing.Callable[[int, int, float], bool] = None
+                 ) -> float:
         """
         Finds the minimum value of the property for a single item, limited to some ratings.
-        :param item_id: the identifier of the item.
-        :param rating_matrix: the rating matrix.
+        :param item: the identifier of the item.
+        :param relevant: True if we only consider relevant ratings, false otherwise.
         :param user_filter: (OPTIONAL) filter for selecting the users. By default, no filter is applied.
         :param rating_filter: (OPTIONAL) filter for selecting the ratings. By default, no filter is applied.
-        :return: the minimum value for each user.
+        :return: the minimum value for the item.
         """
-        pass
 
     @abstractmethod
-    def average_over_items(self, rating_matrix):
+    def average_over_items(self,
+                           relevant: bool = False,
+                           user_filter: typing.Callable[[int], bool] = None,
+                           item_filter: typing.Callable[[int], bool] = None,
+                           rating_filter: typing.Callable[[int, int, float], bool] = None
+                           ) -> float:
         """
         Averages the value of the property over the items.
-        :param rating_matrix: the rating matrix.
+        :param relevant: True if we only consider relevant ratings, False otherwise.
+        :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
+        :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
+        :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
         :return: the average value over the items.
         """
         pass
 
     @abstractmethod
-    def average_over_items_relevant(self, rating_matrix):
+    def max_over_items(self,
+                       relevant: bool = False,
+                       user_filter: typing.Callable[[int], bool] = None,
+                       item_filter: typing.Callable[[int], bool] = None,
+                       rating_filter: typing.Callable[[int, int, float], bool] = None
+                       ) -> float:
         """
-        Averages the value of the property over the items (limited to the set of relevant ratings)
-        :param rating_matrix: the rating matrix.
-        :return: the average value over the items.
+        Obtains the maximum value of the property over the items.
+        :param relevant: True if we only consider relevant ratings, False otherwise.
+        :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
+        :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
+        :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
+        :return: the maximum value over the items.
         """
         pass
 
     @abstractmethod
-    def average_over_items_filter(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                                  rating_filter=lambda x: x):
+    def min_over_items(self,
+                       relevant: bool = False,
+                       user_filter: typing.Callable[[int], bool] = None,
+                       item_filter: typing.Callable[[int], bool] = None,
+                       rating_filter: typing.Callable[[int, int, float], bool] = None
+                       ) -> float:
         """
-        Averages the value of the property over a selection of items, limiting the selection of ratings used.
-        :param rating_matrix: the rating matrix.
-        :param user_filter: (OPTIONAL) filter for selecting the users. By default, no filter is applied.
-        :param item_filter: (OPTIONAL) filter for selecting the items. By default, no filter is applied.
-        :param rating_filter: (OPTIONAL) filter for selecting the ratings. By default, no filter is applied.
-        :return: the minimum value for each items.
+        Obtains the minimum value of the property over the items.
+        :param relevant: True if we only consider relevant ratings, False otherwise.
+        :param user_filter: (OPTIONAL) filter for the users. By default, no filter is applied.
+        :param item_filter: (OPTIONAL) filter for the items. By default, no filter is applied.
+        :param rating_filter: (OPTIONAL) filter for the ratings. By default, no filter is applied.
+        :return: the minimum value over the items.
         """
         pass

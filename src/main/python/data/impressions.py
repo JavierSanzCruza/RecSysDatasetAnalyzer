@@ -79,14 +79,14 @@ class Impressions:
         Obtains the set of users.
         :return: the set of users.
         """
-        return iter(self.user_impressions.keys())
+        return (x for x in self.user_impressions.keys())
 
     def get_items(self):
         """
         Obtains the set of items.
         :return: the set of items.
         """
-        return iter(self.item_impressions.keys())
+        return (x for x in self.item_impressions.keys())
 
     def get_user_impressions(self, user_id):
         """
@@ -94,7 +94,7 @@ class Impressions:
         :param user_id: the identifier of the user.
         :return: an iterator of the impressions for the user.
         """
-        return iter(self.user_impressions.get(user_id, set()))
+        return (x for x in self.user_impressions.get(user_id, set()))
 
     def get_item_impressions(self, item_id):
         """
@@ -102,7 +102,7 @@ class Impressions:
         :param item_id: the identifier of the item.
         :return: an iterator of the impressed users.
         """
-        return iter(self.item_impressions.get(item_id, set()))
+        return (x for x in self.item_impressions.get(item_id, set()))
 
     def get_num_impressions(self):
         """
@@ -116,11 +116,27 @@ class Impressions:
         Obtains the number of users.
         :return: the number of users.
         """
-        return self.user_impressions.keys().__len__()
+        return len(self.user_impressions.keys())
 
     def get_num_items(self):
         """
         Obtains the number of items.
         :return: the number of items.
         """
-        return self.item_impressions.keys().__len__()
+        return len(self.item_impressions.keys())
+
+    def get_num_user_impressions(self, user):
+        """
+        Obtains the number of impressions for a user.
+        :param user: the identifier of the user.
+        :return: the number of impressions for the user.
+        """
+        return len(self.user_impressions.get(user, []))
+
+    def get_num_item_impressions(self, item):
+        """
+        Obtains the number of impressions in which an item appears.
+        :param item: the item identifier.
+        :return: the number of impressions in which the item appears.
+        """
+        return len(self.item_impressions.get(item, []))

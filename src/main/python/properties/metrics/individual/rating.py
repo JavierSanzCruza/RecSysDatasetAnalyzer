@@ -1,5 +1,5 @@
 """
-Implementation of the properties of users / items / dataset according to ratings.
+Implementation of properties of users / items / dataset related to the different ratings in the rating matrix.
 """
 
 __version__ = '0.1'
@@ -16,424 +16,569 @@ __copyright__ = """
 __license__ = 'Mozilla Public License v. 2.0'
 
 from src.main.python.properties.metrics.individual.individual_property import IndividualProperty
+from src.main.python.data.filters import *
 
 import math
+import typing
+import numpy as np
 
 
 class Rating(IndividualProperty):
+    """
+    Implementation of properties of users / items / dataset related to the different ratings in the rating matrix.
+    """
 
-    def total(self, rating_matrix):
-        summation = 0
-        for user in rating_matrix.get_users():
-            for item, rating in rating_matrix.get_user_ratings(user):
-                summation += rating
-        return float(summation)
-
-    def total_relevant(self, rating_matrix):
-        summation = 0
-        for user in rating_matrix.get_users():
-            for item, rating in rating_matrix.get_user_rel_ratings(user):
-                summation += rating
-        return float(summation)
-
-    def total_filter(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x, rating_filter=lambda x: x):
-        summation = 0
-        for user in filter(user_filter, rating_matrix.get_users):
-            for item, rating in rating_matrix.get_user_ratings(user):
-                if item_filter(item) and rating_filter((user, item, rating)):
-                    summation += rating
-        return float(summation)
-
-    def average(self, rating_matrix):
-        summation = 0
-        for user in rating_matrix.get_users():
-            for item, rating in rating_matrix.get_user_ratings(user):
-                summation += rating / float(rating_matrix.get_num_ratings())
-
-    def average_relevant(self, rating_matrix):
-        summation = 0
-        for user in rating_matrix.get_users():
-            for item, rating in rating_matrix.get_user_rel_ratings(user):
-                summation += rating
-        return float(summation) / float(rating_matrix.get_num_rel_ratings())
-
-    def average_filter(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                       rating_filter=lambda x: x):
-        summation = 0
-        count = 0
-        for user in filter(user_filter, rating_matrix.get_users):
-            for item, rating in rating_matrix.get_user_ratings(user):
-                if item_filter(item) and rating_filter((user, item, rating)):
-                    summation += rating
-                    count += 1
-        return float(summation) / float(count)
-
-    def max(self, rating_matrix):
-        maximum = -math.inf
-        for user in rating_matrix.get_users():
-            for item, rating in rating_matrix.get_user_ratings(user):
-                if rating > maximum:
-                    maximum = rating
-        return maximum
-
-    def max_relevant(self, rating_matrix):
-        maximum = -math.inf
-        for user in rating_matrix.get_users():
-            for item, rating in rating_matrix.get_user_rel_ratings(user):
-                if rating > maximum:
-                    maximum = rating
-        return maximum
-
-    def max_filter(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x, rating_filter=lambda x: x):
-        maximum = -math.inf
-        for user in filter(user_filter, rating_matrix.get_users):
-            for item, rating in rating_matrix.get_user_ratings(user):
-                if item_filter(item) and rating_filter((user, item, rating)):
-                    if rating > maximum:
-                        maximum = rating
-        return maximum
-
-    def min(self, rating_matrix):
-        minimum = math.inf
-        for user in rating_matrix.get_users():
-            for item, rating in rating_matrix.get_user_ratings(user):
-                if rating < minimum:
-                    minimum = rating
-        return minimum
-
-    def min_relevant(self, rating_matrix):
-        minimum = -math.inf
-        for user in rating_matrix.get_users():
-            for item, rating in rating_matrix.get_user_rel_ratings(user):
-                if rating < minimum:
-                    minimum = rating
-        return minimum
-
-    def min_filter(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x, rating_filter=lambda x: x):
-        minimum = -math.inf
-        for user in filter(user_filter, rating_matrix.get_users()):
-            for item, rating in rating_matrix.get_user_ratings(user):
-                if item_filter(item) and rating_filter((user, item, rating)):
-                    if rating < minimum:
-                        minimum = rating
-        return minimum
-
-    @staticmethod
-    def total_list(values):
+    def total(self,
+              relevant: bool = False,
+              user_filter: typing.Callable[[typing.Any], bool] = None,
+              item_filter: typing.Callable[[typing.Any], bool] = None,
+              rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+              ):
         """
-        Averages the values of a list.
-        :param values: the list
-        :return: the average value of the list
+        Computes the sum of the selected ratings of the matrix.
         """
-        aux = 0.0
-        for item, rating in values:
-            aux += rating
-        return aux
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
 
-    @staticmethod
-    def average_list(values):
+        return sum((sum(rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
+                        if item_filter(item) and rating_filter(user, item, rating))
+                    for user in self.rating_matrix.get_users() if user_filter(user)))
+
+    def average(self,
+                relevant: bool = False,
+                user_filter: typing.Callable[[typing.Any], bool] = None,
+                item_filter: typing.Callable[[typing.Any], bool] = None,
+                rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                ):
         """
-        Averages the values of a list.
-        :param values: the list
-        :return: the average value of the list
+        Computes the average value of the ratings in the rating matrix.
         """
 
-        aux = 0.0
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        total = 0.0
         count = 0.0
+        for user in self.rating_matrix.get_users():
+            if user_filter(user):
+                for item, rating in self.rating_matrix.get_user_ratings(user, relevant):
+                    if item_filter(item) and rating_filter(user, item, rating):
+                        total += rating
+                        count += 1.0
 
-        for item, rating in values:
-            aux += rating
-            count += 1.0
-        return aux / count if count > 0 else 0
+        return total / count
 
-    @staticmethod
-    def max_list(values):
+    def max(self,
+            relevant: bool = False,
+            user_filter: typing.Callable[[typing.Any], bool] = None,
+            item_filter: typing.Callable[[typing.Any], bool] = None,
+            rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+            ):
         """
-        Averages the values of a list.
-        :param values: the list
-        :return: the average value of the list
+        Computes the maximum value of the ratings of the matrix.
         """
-        return max(map(lambda x: x[1], values))
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
 
-    @staticmethod
-    def min_list(values):
+        return max((max(rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
+                        if item_filter(item) and rating_filter(user, item, rating))
+                    for user in self.rating_matrix.get_users() if user_filter(user)))
+
+    def min(self,
+            relevant: bool = False,
+            user_filter: typing.Callable[[typing.Any], bool] = None,
+            item_filter: typing.Callable[[typing.Any], bool] = None,
+            rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+            ):
         """
-        Averages the values of a list.
-        :param values: the list
-        :return: the average value of the list
+        Computes the minimum value of the ratings of the matrix.
         """
-        return min(map(lambda x: x[1], values))
 
-    def total_users(self, rating_matrix):
-        value = dict()
-        for user in rating_matrix.get_users():
-            value[user] = Rating.total_list(rating_matrix.get_user_ratings(user))
-        return value
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
 
-    def total_relevant_users(self, rating_matrix):
-        value = dict()
-        for user in rating_matrix.get_users():
-            value[user] = Rating.total_list(rating_matrix.get_user_rel_ratings(user))
-        return value
+        return min((min(rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
+                        if item_filter(item) and rating_filter(user, item, rating))
+                    for user in self.rating_matrix.get_users() if user_filter(user)))
 
-    def total_filter_users(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                           rating_filter=lambda x: x):
-        value = dict()
-        for user in filter(user_filter, rating_matrix.get_users()):
-            value[user] = Rating.total_list(
-                filter(lambda x: item_filter(x[0]) and rating_filter((user, x[0], x[1])),
-                       rating_matrix.get_user_ratings(user))
-            )
-        return value
+    # Methods for computing the values for the different users
 
-    def average_users(self, rating_matrix):
-        value = dict()
-        for user in rating_matrix.get_users():
-            value[user] = Rating.average_list(rating_matrix.get_user_ratings(user))
-        return value
+    def total_users(self,
+                    relevant: bool = False,
+                    user_filter: typing.Callable[[typing.Any], bool] = None,
+                    item_filter: typing.Callable[[typing.Any], bool] = None,
+                    rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None):
+        """
+        For each user, finds the sum of his/her ratings in the system.
+        """
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
 
-    def average_relevant_users(self, rating_matrix):
-        value = dict()
-        for user in rating_matrix.get_users():
-            value[user] = Rating.average_list(rating_matrix.get_user_rel_ratings(user))
-        return value
+        values = dict()
+        for user in self.rating_matrix.get_users():
+            if user_filter(user):
+                values[user] = sum(rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
+                                   if item_filter(item) and rating_filter(user, item, rating))
+        return values
 
-    def average_filter_users(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                             rating_filter=lambda x: x):
-        value = dict()
-        for user in filter(user_filter, rating_matrix.get_users()):
-            value[user] = Rating.average_list(
-                filter(lambda x: item_filter(x[0]) and rating_filter((user, x[0], x[1])),
-                       rating_matrix.get_user_ratings(user))
-            )
-        return value
+    def average_users(self,
+                      relevant: bool = False,
+                      user_filter: typing.Callable[[typing.Any], bool] = None,
+                      item_filter: typing.Callable[[typing.Any], bool] = None,
+                      rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                      ):
+        """
+        For each user, finds the average value of the ratings he/she introduced in the system.
+        """
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
 
-    def max_users(self, rating_matrix):
-        value = dict()
-        for user in rating_matrix.get_users():
-            value[user] = Rating.max_list(rating_matrix.get_user_ratings(user))
-        return value
+        values = dict()
+        for user in self.rating_matrix.get_users():
+            if user_filter(user):
+                values[user] = np.average(
+                    (rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
+                     if item_filter(item) and rating_filter(user, item, rating)
+                     ))
 
-    def max_relevant_users(self, rating_matrix):
-        value = dict()
-        for user in rating_matrix.get_users():
-            value[user] = Rating.max_list(rating_matrix.get_user_rel_ratings(user))
-        return value
+        return values
 
-    def max_filter_users(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                         rating_filter=lambda x: x):
-        value = dict()
-        for user in filter(user_filter, rating_matrix.get_users()):
-            value[user] = Rating.max_list(
-                filter(lambda x: item_filter(x[0]) and rating_filter((user, x[0], x[1])),
-                       rating_matrix.get_user_ratings(user))
-            )
-        return value
+    def max_users(self,
+                  relevant: bool = False,
+                  user_filter: typing.Callable[[typing.Any], bool] = None,
+                  item_filter: typing.Callable[[typing.Any], bool] = None,
+                  rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                  ):
+        """
+        For each user, finds the maximum value of the ratings he/she introduced in the system.
+        """
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
 
-    def min_users(self, rating_matrix):
-        value = dict()
-        for user in rating_matrix.get_users():
-            value[user] = Rating.min_list(rating_matrix.get_user_ratings(user))
-        return value
+        values = dict()
+        for user in self.rating_matrix.get_users():
+            if user_filter(user):
+                values[user] = max(
+                    (rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
+                     if item_filter(item) and rating_filter(user, item, rating)
+                     ))
 
-    def min_relevant_users(self, rating_matrix):
-        value = dict()
-        for user in rating_matrix.get_users():
-            value[user] = Rating.min_list(rating_matrix.get_user_rel_ratings(user))
-        return value
+        return values
 
-    def min_filter_users(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                         rating_filter=lambda x: x):
-        value = dict()
-        for user in filter(user_filter, rating_matrix.get_users()):
-            value[user] = Rating.min_list(
-                filter(lambda x: item_filter(x[0]) and rating_filter((user, x[0], x[1])),
-                       rating_matrix.get_user_ratings(user))
-            )
-        return value
+    def min_users(self,
+                  relevant: bool = False,
+                  user_filter: typing.Callable[[typing.Any], bool] = None,
+                  item_filter: typing.Callable[[typing.Any], bool] = None,
+                  rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                  ):
+        """
+        For each user, finds the minimum value of the ratings he/she introduced in the system.
+        """
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
 
-    def average_user(self, user_id, rating_matrix, item_filter=lambda x: x, rating_filter=lambda x: x):
-        if not rating_matrix.get_users().__contains__(user_id):
+        values = dict()
+        for user in self.rating_matrix.get_users():
+            if user_filter(user):
+                values[user] = min(
+                    (rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
+                     if item_filter(item) and rating_filter(user, item, rating)
+                     ))
+
+        return values
+
+    def total_user(self,
+                   user: typing.Any,
+                   relevant: bool = False,
+                   item_filter: typing.Callable[[typing.Any], bool] = None,
+                   rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                   ):
+        """
+        Finds the sum of the ratings introduced in the system by a user.
+        """
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        if not self.rating_matrix.get_users().__contains__(user):
             return math.nan
         else:
-            return Rating.average_list(
-                filter(lambda x: item_filter(x[0]) and rating_filter((user_id, x[0], x[1])),
-                       rating_matrix.get_user_ratings(user_id)))
+            return sum(rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
+                       if item_filter(item) and rating_filter(user, item, rating))
 
-    def max_user(self, user_id, rating_matrix, item_filter=lambda x: x, rating_filter=lambda x: x):
-        if not rating_matrix.get_users().__contains__(user_id):
+    def average_user(self,
+                     user: typing.Any,
+                     relevant: bool = False,
+                     item_filter: typing.Callable[[typing.Any], bool] = None,
+                     rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                     ):
+        """
+        Finds the sum of the ratings introduced in the system by a user.
+        """
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        if not self.rating_matrix.get_users().__contains__(user):
             return math.nan
         else:
-            return Rating.max_list(
-                filter(lambda x: item_filter(x[0]) and rating_filter((user_id, x[0], x[1])),
-                       rating_matrix.get_user_ratings(user_id)))
+            return np.average(rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
+                              if item_filter(item) and rating_filter(user, item, rating))
 
-    def min_user(self, user_id, rating_matrix, item_filter=lambda x: x, rating_filter=lambda x: x):
-        if not rating_matrix.get_users().__contains__(user_id):
+    def max_user(self,
+                 user: typing.Any,
+                 relevant: bool = False,
+                 item_filter: typing.Callable[[typing.Any], bool] = None,
+                 rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                 ):
+        """
+        Finds the sum of the ratings introduced in the system by a user.
+        """
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        if not self.rating_matrix.get_users().__contains__(user):
             return math.nan
         else:
-            return Rating.min_list(
-                filter(lambda x: item_filter(x[0]) and rating_filter((user_id, x[0], x[1])),
-                       rating_matrix.get_user_ratings(user_id)))
+            return max(rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
+                       if item_filter(item) and rating_filter(user, item, rating))
 
-    def average_over_users(self, rating_matrix):
-        summation = 0
-        for user in rating_matrix.get_users():
-            for item, rating in rating_matrix.get_user_ratings(user):
-                summation += rating
-        return float(summation) / float(rating_matrix.get_num_users())
+    def min_user(self,
+                 user: typing.Any,
+                 relevant: bool = False,
+                 item_filter: typing.Callable[[typing.Any], bool] = None,
+                 rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                 ):
+        """
+        Finds the sum of the ratings introduced in the system by a user.
+        """
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
 
-    def average_over_users_relevant(self, rating_matrix):
-        summation = 0
-        for user in rating_matrix.get_users():
-            for item, rating in rating_matrix.get_user_rel_ratings(user):
-                summation += rating
-        return float(summation) / float(rating_matrix.get_num_users())
-
-    def average_over_users_filter(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                                  rating_filter=lambda x: x):
-        summation = 0
-        count = 0
-        for user in filter(user_filter, rating_matrix.get_users):
-            for item, rating in rating_matrix.get_user_ratings(user):
-                if item_filter(item) and rating_filter((user, item, rating)):
-                    summation += rating
-            count += 1
-        return float(summation) / float(count)
-
-    def total_items(self, rating_matrix):
-        value = dict()
-        for item in rating_matrix.get_items():
-            value[item] = Rating.total_list(rating_matrix.get_item_ratings(item))
-        return value
-
-    def total_relevant_items(self, rating_matrix):
-        value = dict()
-        for item in rating_matrix.get_items():
-            value[item] = Rating.total_list(rating_matrix.get_item_rel_ratings(item))
-        return value
-
-    def total_filter_items(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                           rating_filter=lambda x: x):
-        value = dict()
-        for item in filter(item_filter, rating_matrix.get_items()):
-            value[item] = Rating.total_list(
-                filter(lambda x: user_filter(x[0]) and rating_filter((x[0], item, x[1])),
-                       rating_matrix.get_item_ratings(item))
-            )
-        return value
-
-    def average_items(self, rating_matrix):
-        value = dict()
-        for item in rating_matrix.get_items():
-            value[item] = Rating.average_list(rating_matrix.get_item_ratings(item))
-        return value
-
-    def average_relevant_items(self, rating_matrix):
-        value = dict()
-        for item in rating_matrix.get_items():
-            value[item] = Rating.average_list(rating_matrix.get_item_rel_ratings(item))
-        return value
-
-    def average_filter_items(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                             rating_filter=lambda x: x):
-        value = dict()
-        for item in filter(item_filter, rating_matrix.get_items()):
-            value[item] = Rating.average_list(
-                filter(lambda x: user_filter(x[0]) and rating_filter((x[0], item, x[1])),
-                       rating_matrix.get_item_ratings(item))
-            )
-        return value
-
-    def max_items(self, rating_matrix):
-        value = dict()
-        for item in rating_matrix.get_items():
-            value[item] = Rating.max_list(rating_matrix.get_item_ratings(item))
-        return value
-
-    def max_relevant_items(self, rating_matrix):
-        value = dict()
-        for item in rating_matrix.get_items():
-            value[item] = Rating.max_list(rating_matrix.get_item_rel_ratings(item))
-        return value
-
-    def max_filter_items(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                         rating_filter=lambda x: x):
-        value = dict()
-        for item in filter(item_filter, rating_matrix.get_items()):
-            value[item] = Rating.max_list(
-                filter(lambda x: user_filter(x[0]) and rating_filter((x[0], item, x[1])),
-                       rating_matrix.get_item_ratings(item))
-            )
-        return value
-
-    def min_items(self, rating_matrix):
-        value = dict()
-        for item in rating_matrix.get_items():
-            value[item] = Rating.min_list(rating_matrix.get_item_ratings(item))
-        return value
-
-    def min_relevant_items(self, rating_matrix):
-        value = dict()
-        for item in rating_matrix.get_items():
-            value[item] = Rating.min_list(rating_matrix.get_item_rel_ratings(item))
-        return value
-
-    def min_filter_items(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                         rating_filter=lambda x: x):
-        value = dict()
-        for item in filter(item_filter, rating_matrix.get_items()):
-            value[item] = Rating.min_list(
-                filter(lambda x: user_filter(x[0]) and rating_filter((x[0], item, x[1])),
-                       rating_matrix.get_item_ratings(item))
-            )
-        return value
-
-    def average_item(self, item_id, rating_matrix, user_filter=lambda x: x, rating_filter=lambda x: x):
-        if not rating_matrix.get_items().__contains__(item_id):
+        if not self.rating_matrix.get_users().__contains__(user):
             return math.nan
         else:
-            return Rating.average_list(
-                filter(lambda x: user_filter(x[0]) and rating_filter((x[0], item_id, x[1])),
-                       rating_matrix.get_item_ratings(item_id)))
+            return min(rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
+                       if item_filter(item) and rating_filter(user, item, rating))
 
-    def max_item(self, item_id, rating_matrix, user_filter=lambda x: x, rating_filter=lambda x: x):
-        if not rating_matrix.get_items().__contains__(item_id):
+    def average_over_users(self,
+                           relevant: bool = False,
+                           user_filter: typing.Callable[[typing.Any], bool] = None,
+                           item_filter: typing.Callable[[typing.Any], bool] = None,
+                           rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                           ):
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        return np.average((sum(rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
+                               if item_filter(item) and rating_filter(user, item, rating))
+                           for user in self.rating_matrix.get_users() if user_filter(user)))
+
+    def max_over_users(self,
+                       relevant: bool = False,
+                       user_filter: typing.Callable[[typing.Any], bool] = None,
+                       item_filter: typing.Callable[[typing.Any], bool] = None,
+                       rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                       ):
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        return max((sum(rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
+                        if item_filter(item) and rating_filter(user, item, rating))
+                    for user in self.rating_matrix.get_users() if user_filter(user)))
+
+    def min_over_users(self,
+                       relevant: bool = False,
+                       user_filter: typing.Callable[[typing.Any], bool] = None,
+                       item_filter: typing.Callable[[typing.Any], bool] = None,
+                       rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                       ):
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        return min((sum(rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
+                        if item_filter(item) and rating_filter(user, item, rating))
+                    for user in self.rating_matrix.get_users() if user_filter(user)))
+
+    # Methods for computing the values for the different users
+
+    def total_items(self,
+                    relevant: bool = False,
+                    user_filter: typing.Callable[[typing.Any], bool] = None,
+                    item_filter: typing.Callable[[typing.Any], bool] = None,
+                    rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None):
+        """
+        For each user, finds the sum of his/her ratings in the system.
+        """
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        values = dict()
+        for item in self.rating_matrix.get_items():
+            if item_filter(item):
+                values[item] = sum(rating for user, rating in self.rating_matrix.get_item_ratings(item, relevant)
+                                   if user_filter(user) and rating_filter(user, item, rating))
+        return values
+
+    def average_items(self,
+                      relevant: bool = False,
+                      user_filter: typing.Callable[[typing.Any], bool] = None,
+                      item_filter: typing.Callable[[typing.Any], bool] = None,
+                      rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                      ):
+        """
+        For each user, finds the average value of the ratings he/she introduced in the system.
+        """
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        values = dict()
+        for item in self.rating_matrix.get_items():
+            if item_filter(item):
+                values[item] = np.average(
+                    (rating for user, rating in self.rating_matrix.get_item_ratings(item, relevant)
+                     if user_filter(user) and rating_filter(user, item, rating)
+                     ))
+
+        return values
+
+    def max_items(self,
+                  relevant: bool = False,
+                  user_filter: typing.Callable[[typing.Any], bool] = None,
+                  item_filter: typing.Callable[[typing.Any], bool] = None,
+                  rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                  ):
+        """
+        For each user, finds the maximum value of the ratings he/she introduced in the system.
+        """
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        values = dict()
+        for item in self.rating_matrix.get_items():
+            if item_filter(item):
+                values[item] = max(
+                    (rating for user, rating in self.rating_matrix.get_item_ratings(item, relevant)
+                     if user_filter(user) and rating_filter(user, item, rating)
+                     ))
+
+        return values
+
+    def min_items(self,
+                  relevant: bool = False,
+                  user_filter: typing.Callable[[typing.Any], bool] = None,
+                  item_filter: typing.Callable[[typing.Any], bool] = None,
+                  rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                  ):
+        """
+        For each user, finds the maximum value of the ratings he/she introduced in the system.
+        """
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        values = dict()
+        for item in self.rating_matrix.get_items():
+            if item_filter(item):
+                values[item] = min(
+                    (rating for user, rating in self.rating_matrix.get_item_ratings(item, relevant)
+                     if user_filter(user) and rating_filter(user, item, rating)
+                     ))
+
+        return values
+
+    def total_item(self,
+                   item: typing.Any,
+                   relevant: bool = False,
+                   user_filter: typing.Callable[[typing.Any], bool] = None,
+                   rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                   ):
+        """
+        Finds the sum of the ratings introduced in the system by a user.
+        """
+        if user_filter is None:
+            user_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        if not self.rating_matrix.get_items().__contains__(item):
             return math.nan
         else:
-            return Rating.max_list(
-                filter(lambda x: user_filter(x[0]) and rating_filter((x[0], item_id, x[1])),
-                       rating_matrix.get_item_ratings(item_id)))
+            return sum(rating for user, rating in self.rating_matrix.get_item_ratings(item, relevant)
+                       if user_filter(user) and rating_filter(user, item, rating))
 
-    def min_item(self, item_id, rating_matrix, user_filter=lambda x: x, rating_filter=lambda x: x):
-        if not rating_matrix.get_items().__contains__(item_id):
+    def average_item(self,
+                     item: typing.Any,
+                     relevant: bool = False,
+                     user_filter: typing.Callable[[typing.Any], bool] = None,
+                     rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                     ):
+        """
+        Finds the sum of the ratings introduced in the system by a user.
+        """
+        if user_filter is None:
+            user_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        if not self.rating_matrix.get_items().__contains__(item):
             return math.nan
         else:
-            return Rating.min_list(
-                filter(lambda x: user_filter(x[0]) and rating_filter((x[0], item_id, x[1])),
-                       rating_matrix.get_item_ratings(item_id)))
+            return np.average(rating for user, rating in self.rating_matrix.get_item_ratings(item, relevant)
+                              if user_filter(user) and rating_filter(user, item, rating))
 
-    def average_over_items(self, rating_matrix):
-        summation = 0
-        for item in rating_matrix.get_items():
-            for user, rating in rating_matrix.get_item_ratings(item):
-                summation += rating
-        return float(summation) / float(rating_matrix.get_num_items())
+    def max_item(self,
+                 item: typing.Any,
+                 relevant: bool = False,
+                 user_filter: typing.Callable[[typing.Any], bool] = None,
+                 rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                 ):
+        """
+        Finds the sum of the ratings introduced in the system by a user.
+        """
+        if user_filter is None:
+            user_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
 
-    def average_over_items_relevant(self, rating_matrix):
-        summation = 0
-        for item in rating_matrix.get_users():
-            for user, rating in rating_matrix.get_item_rel_ratings(item):
-                summation += rating
-        return float(summation) / float(rating_matrix.get_num_items())
+        if not self.rating_matrix.get_items().__contains__(item):
+            return math.nan
+        else:
+            return max(rating for user, rating in self.rating_matrix.get_item_ratings(item, relevant)
+                       if user_filter(user) and rating_filter(user, item, rating))
 
-    def average_over_items_filter(self, rating_matrix, user_filter=lambda x: x, item_filter=lambda x: x,
-                                  rating_filter=lambda x: x):
-        summation = 0
-        count = 0
-        for item in filter(item_filter, rating_matrix.get_items()):
-            for user, rating in rating_matrix.get_item_ratings(item):
-                if user_filter(user) and rating_filter((user, item, rating)):
-                    summation += rating
-            count += 1
-        return float(summation) / float(count)
+    def min_item(self,
+                 item: typing.Any,
+                 relevant: bool = False,
+                 user_filter: typing.Callable[[typing.Any], bool] = None,
+                 rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                 ):
+        """
+        Finds the sum of the ratings introduced in the system by a user.
+        """
+        if user_filter is None:
+            user_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        if not self.rating_matrix.get_items().__contains__(item):
+            return math.nan
+        else:
+            return min(rating for user, rating in self.rating_matrix.get_item_ratings(item, relevant)
+                       if user_filter(user) and rating_filter(user, item, rating))
+
+    def average_over_items(self,
+                           relevant: bool = False,
+                           user_filter: typing.Callable[[typing.Any], bool] = None,
+                           item_filter: typing.Callable[[typing.Any], bool] = None,
+                           rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                           ):
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        return np.average((sum(rating for user, rating in self.rating_matrix.get_item_ratings(item, relevant)
+                               if user_filter(user) and rating_filter(user, item, rating))
+                           for item in self.rating_matrix.get_items() if item_filter(item)))
+
+    def max_over_items(self,
+                       relevant: bool = False,
+                       user_filter: typing.Callable[[typing.Any], bool] = None,
+                       item_filter: typing.Callable[[typing.Any], bool] = None,
+                       rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                       ):
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        return max((sum(rating for user, rating in self.rating_matrix.get_item_ratings(item, relevant)
+                        if user_filter(user) and rating_filter(user, item, rating))
+                    for item in self.rating_matrix.get_items() if item_filter(item)))
+
+    def min_over_items(self,
+                       relevant: bool = False,
+                       user_filter: typing.Callable[[typing.Any], bool] = None,
+                       item_filter: typing.Callable[[typing.Any], bool] = None,
+                       rating_filter: typing.Callable[[typing.Any, typing.Any, float], bool] = None
+                       ):
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
+        return min((sum(rating for user, rating in self.rating_matrix.get_item_ratings(item, relevant)
+                        if user_filter(user) and rating_filter(user, item, rating))
+                    for item in self.rating_matrix.get_items() if item_filter(item)))

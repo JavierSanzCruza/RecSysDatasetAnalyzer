@@ -17,9 +17,11 @@ __copyright__ = """
 __license__ = 'Mozilla Public License v. 2.0'
 
 import math
-from functools import reduce
+
+import typing
 
 from .adding_return import AddingReturn
+from .filters import UserFilter, ItemFilter, RatingFilter
 from ..utils.optional import Optional
 
 
@@ -29,7 +31,10 @@ class RatingMatrix:
     It just includes a) users, b) items and c) ratings between users and items.
     """
 
-    def __init__(self, threshold, binarize, update):
+    def __init__(self,
+                 threshold: float,
+                 binarize: bool,
+                 update: bool):
         """
         Initializes the rating matrix.
         :param threshold: the relevance threshold of the ratings.
@@ -54,149 +59,131 @@ class RatingMatrix:
         self.binarize = binarize
         self.update = update
 
-    def add_user(self, user_id):
+    def add_user(self,
+                 user: int):
         """
         Adds a new user to the rating matrix.
-        :param user_id: the identifier of the user.
+        :param user: the identifier of the user.
         :return: true if we add the user, false otherwise.
         """
-        if self.users.__contains__(user_id):
+        if self.users.__contains__(user):
             return False
         else:
-            self.users.add(user_id)
-            self.user_2_item_matrix[user_id] = dict()
+            self.users.add(user)
+            self.user_2_item_matrix[user] = dict()
             return True
 
-    def add_item(self, item_id):
+    def add_item(self,
+                 item: int):
         """
         Adds a new item to the rating matrix.
-        :param item_id: the identifier of the item.
+        :param item: the identifier of the item.
         :return: true if we add the item, false otherwise.
         """
-        if self.items.__contains__(item_id):
+        if self.items.__contains__(item):
             return False
         else:
-            self.items.add(item_id)
-            self.item_2_user_matrix[item_id] = dict()
+            self.items.add(item)
+            self.item_2_user_matrix[item] = dict()
             return True
 
-    def rate(self, user_id, item_id, value):
+    def rate(self,
+             user: int,
+             item: int,
+             rating: float):
         """
         Adds a new rating to the matrix.
-        :param user_id: the identifier of the user.
-        :param item_id: the identifier of the item.
-        :param value: the value of the rating.
+        :param user: the identifier of the user.
+        :param item: the identifier of the item.
+        :param rating: the value of the rating.
         :return: AddingReturn.ADDED if the rating is new, AddingReturn.UPDATED if we just updated it, AddingReturn.NONE
         if it kept the same, AddingReturn.ERROR if something failed.
         """
-        if math.isnan(value):
+        if math.isnan(rating):
             return AddingReturn.ERROR
 
-        if self.users.__contains__(user_id) and self.items.__contains__(item_id):
-            oldval = self.user_2_item_matrix[user_id].get(item_id, math.nan)
-            val = (1.0 if value >= self.threshold else 0.0) if self.binarize else value
-            rel = value >= self.threshold
+        if self.users.__contains__(user) and self.items.__contains__(item):
+            oldval = self.user_2_item_matrix[user].get(item, math.nan)
+            val = (1.0 if rating >= self.threshold else 0.0) if self.binarize else rating
+            rel = rating >= self.threshold
 
             self.num_total_ratings += 1
             self.num_total_rel_ratings += 1 if rel else 0
 
             if math.isnan(oldval):  # The rating does not exist.
-                self.user_2_item_matrix[user_id][item_id] = val
-                self.item_2_user_matrix[item_id][user_id] = val
+                self.user_2_item_matrix[user][item] = val
+                self.item_2_user_matrix[item][user] = val
                 self.num_rel_ratings += 1 if rel else 0
                 self.num_ratings += 1
                 return AddingReturn.ADDED
             elif self.binarize and self.update:  # The rating already exists, and we count the number of positives.
                 oldrel = oldval > 0
-                self.user_2_item_matrix[user_id][item_id] = val + oldval
-                self.item_2_user_matrix[item_id][user_id] = val + oldval
+                self.user_2_item_matrix[user][item] = val + oldval
+                self.item_2_user_matrix[item][user] = val + oldval
                 self.num_rel_ratings += 1 if (not oldrel and rel) else 0
                 return AddingReturn.UPDATED
             elif self.update and val > oldval:
                 oldrel = oldval >= self.threshold
                 val = max(oldval, val)
                 self.num_rel_ratings += 1 if (not oldrel and rel) else 0
-                self.user_2_item_matrix[user_id][item_id] = val
-                self.item_2_user_matrix[item_id][user_id] = val
+                self.user_2_item_matrix[user][item] = val
+                self.item_2_user_matrix[item][user] = val
                 return AddingReturn.UPDATED
             else:
                 return AddingReturn.NONE
         else:
             return AddingReturn.ERROR
 
-    def get_num_ratings(self):
+    def get_num_ratings(self,
+                        relevant: bool = False):
         """
         Obtains the number of ratings (not repeated).
+        :param relevant: True if we want to retrieve the number of relevant ratings, False otherwise
         :return: the number of ratings (not repeated).
         """
-        return self.num_ratings
+        return self.num_rel_ratings if relevant else self.num_ratings
 
-    def get_num_user_ratings(self, user_id):
-        """
-        Obtains the number of ratings of a user (not repeated)
-        :param user_id: the identifier of the user.
-        :return: the number of ratings of the user (not repeated)
-        """
-        if self.user_2_item_matrix.__contains__(user_id):
-            return len(self.user_2_item_matrix.get(user_id))
-        return 0
-
-    def get_num_user_rel_ratings(self, user_id):
-        """
-        Obtains the number of ratings of a user (not repeated)
-        :param user_id: the identifier of the user.
-        :return: the number of ratings of the user (not repeated)
-        """
-        if self.user_2_item_matrix.__contains__(user_id):
-            return reduce(lambda x, y: x + 1,
-                          map(lambda x: 1,
-                              filter(lambda item, rating: self.is_relevant(rating),
-                                     self.user_2_item_matrix.get(user_id).items())))
-        return 0
-
-    def get_num_item_ratings(self, item_id):
-        """
-        Obtains the number of ratings of a item (not repeated)
-        :param item_id: the identifier of the item.
-        :return: the number of ratings of the item (not repeated)
-        """
-        if self.item_2_user_matrix.__contains__(item_id):
-            return len(self.item_2_user_matrix.get(item_id))
-        return 0
-
-    def get_num_item_rel_ratings(self, item_id):
-        """
-        Obtains the number of ratings of a user (not repeated)
-        :param item_id: the identifier of the user.
-        :return: the number of ratings of the user (not repeated)
-        """
-        if self.item_2_user_matrix.__contains__(item_id):
-            return reduce(lambda x, y: x + 1,
-                          map(lambda x: 1,
-                              filter(lambda user, rating: self.is_relevant(rating),
-                                     self.item_2_user_matrix.get(item_id).items())))
-        return 0
-
-    def get_num_rel_ratings(self):
-        """
-        Obtains the number of relevant ratings (not repeated).
-        :return: the number of relevant ratings (not repeated).
-        """
-        return self.num_rel_ratings
-
-    def get_num_total_ratings(self):
+    def get_num_total_ratings(self,
+                              relevant: bool = False):
         """
         Obtains the number of ratings (with repetitions).
         :return: the number of ratings (with repetitions).
         """
-        return self.num_total_ratings
+        return self.num_total_rel_ratings if relevant else self.num_total_ratings
 
-    def get_num_total_rel_ratings(self):
+    def get_num_user_ratings(self,
+                             user: int,
+                             relevant: bool = False):
         """
-        Obtains the number of relevant ratings (with repetitions).
-        :return: the number of relevant ratings (with repetitions).
+        Obtains the number of ratings of a user (not repeated)
+        :param user: the identifier of the user.
+        :param relevant: True if we want to retrieve the number of relevant ratings.
+        :return: the number of ratings of the user (not repeated)
         """
-        return self.num_total_rel_ratings
+
+        if self.user_2_item_matrix.__contains__(user):
+            if relevant:
+                sum((1.0 for item, rating in self.user_2_item_matrix.get(user).items() if self.is_relevant(rating)))
+            else:
+                return len(self.user_2_item_matrix.get(user).items())
+        return 0
+
+    def get_num_item_ratings(self,
+                             item: int,
+                             relevant: bool = False):
+        """
+        Obtains the number of ratings of a item (not repeated)
+        :param item: the identifier of the item.
+        :param relevant: True if we want to retrieve the number of relevant ratings.
+        :return: the number of ratings of the item (not repeated)
+        """
+
+        if self.item_2_user_matrix.__contains__(item):
+            if relevant:
+                sum((1.0 for item, rating in self.item_2_user_matrix.get(item).items() if self.is_relevant(rating)))
+            else:
+                return len(self.item_2_user_matrix.get(item).items())
+        return 0
 
     def get_num_users(self):
         """
@@ -217,16 +204,18 @@ class RatingMatrix:
         Obtains an iterator of the users in the system.
         :return: the iterator of the users in the system.
         """
-        return self.users.__iter__()
+        return (user for user in self.get_users())
 
     def get_items(self):
         """
         Obtains an iterator of the items in the system.
         :return: the iterator of the items in the system.
         """
-        return self.items.__iter__()
+        return (item for item in self.get_items())
 
-    def get_rating(self, user_id, item_id):
+    def get_rating(self,
+                   user_id: int,
+                   item_id: int):
         """
         Obtains an individual rating.
         :param user_id: the identifier of the user
@@ -238,49 +227,37 @@ class RatingMatrix:
         else:
             return Optional.empty()
 
-    def get_user_ratings(self, user_id):
+    def get_user_ratings(self,
+                         user: int,
+                         relevant: bool = False):
         """
         Obtains all the ratings of an individual user.
-        :param user_id: the identifier of the user.
+        :param user: the identifier of the user.
+        :param relevant: True if we want to retrieve the relevant ratings, False if we want to retrieve all.
         :return: the ratings of the user
         """
-        if not self.user_2_item_matrix.__contains__(user_id) or self.user_2_item_matrix.get(user_id).__len__() == 0:
-            return [].__iter__()
-        else:
-            return self.user_2_item_matrix.get(user_id).items().__iter__()
 
-    def get_item_ratings(self, item_id):
+        if relevant:
+            return ((item, rating) for item, rating in self.user_2_item_matrix.get(user, []).items()
+                    if self.is_relevant(rating))
+        else:
+            return ((item, rating) for item, rating in self.user_2_item_matrix.get(user, []).items())
+
+    def get_item_ratings(self,
+                         item: int,
+                         relevant: bool = False):
         """
         Obtains all the ratings given to an individual item.
-        :param item_id: the identifier of the item.
+        :param item: the identifier of the item.
+        :param relevant: True if we want to retrieve the relevant ratings, False if we want to retrieve all.
         :return: the ratings given to the item.
         """
-        if not self.item_2_user_matrix.__contains__(item_id) or self.item_2_user_matrix.get(item_id).__len__() == 0:
-            return [].__iter__()
-        else:
-            return self.item_2_user_matrix.get(item_id).items().__iter__()
 
-    def get_relevant_user_ratings(self, user_id):
-        """
-        Obtains all the relevant ratings of an individual user.
-        :param user_id: the identifier of the user.
-        :return: the relevant ratings of the user.
-        """
-        if not self.user_2_item_matrix.__contains__(user_id) or self.user_2_item_matrix.get(user_id).__len__() == 0:
-            return [].__iter__()
+        if relevant:
+            return ((user, rating) for user, rating in self.item_2_user_matrix.get(item, []).items()
+                    if self.is_relevant(rating))
         else:
-            return filter(lambda x: self.is_relevant(x[1]), self.user_2_item_matrix.get(user_id).items())
-
-    def get_relevant_item_ratings(self, item_id):
-        """
-        Obtains all the relevant ratings given to an individual item.
-        :param item_id: the identifier of the item.
-        :return: the relevant ratings of the item.
-        """
-        if not self.item_2_user_matrix.__contains__(item_id) or self.item_2_user_matrix.get(item_id).__len__() == 0:
-            return [].__iter__()
-        else:
-            return filter(lambda x: self.is_relevant(x[1]), self.item_2_user_matrix.get(item_id).items())
+            return ((user, rating) for user, rating in self.item_2_user_matrix.get(item, []).items())
 
     def is_relevant(self, value):
         """
@@ -288,7 +265,39 @@ class RatingMatrix:
         :param value: the rating value.
         :return: whether the rating is relevant or not.
         """
+        return value > 0.0 if self.binarize else value >= self.threshold
+
+    def filter(self,
+               user_filter: typing.Callable[[int], bool] = None,
+               item_filter: typing.Callable[[int], bool] = None,
+               rating_filter: typing.Callable[[int, int, float], bool] = None
+               ):
+        """
+        Obtains a proxy rating matrix containing only a fraction of the ratings.
+        :param user_filter: (OPTIONAL) a filter for selecting the users to keep. By default, no filter is applied.
+        :param item_filter: (OPTIONAL) a filter for selecting the items to keep. By default, no filter is applied.
+        :param rating_filter: (OPTIONAL) a filter for selecting the ratings to keep. By default, no filter is applied.
+        :returns: a rating matrix containing the selected ratings.
+        """
+
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if rating_filter is None:
+            rating_filter = RatingFilter.default()
+
         if self.binarize:
-            return value > 0.0
+            aux_matrix = RatingMatrix(0.5, False, False)
         else:
-            return value >= self.threshold
+            aux_matrix = RatingMatrix(self.threshold, False, False)
+
+        for item in filter(item_filter, self.get_items()):
+            aux_matrix.add_item(item)
+        for user in filter(user_filter, self.get_users()):
+            aux_matrix.add_user(user)
+            for item, rating in self.get_user_ratings(user, False):
+                if item_filter(item) and rating_filter(user, item, rating):
+                    aux_matrix.rate(user, item, rating)
+
+        return aux_matrix
