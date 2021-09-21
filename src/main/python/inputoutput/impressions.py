@@ -11,7 +11,7 @@ class ImpressionDistributionWriter:
         distribution = impressions.get_item_distribution()
         i = 0
         for val in distribution:
-            f.write("\n" + str(i) + "\t" + val)
+            f.write("\n" + str(i) + "\t" + str(val))
             i += 1
         f.close()
 
@@ -23,6 +23,6 @@ class ImpressionDistributionWriter:
         distribution = impressions.get_user_distribution()
         i = 0
         for val in distribution:
-            f.write("\n" + str(i) + "\t" + val)
+            f.write("\n" + str(i) + "\t" + str(val))
             i += 1
         f.close()

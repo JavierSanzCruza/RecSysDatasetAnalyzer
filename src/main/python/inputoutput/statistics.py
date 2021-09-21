@@ -10,6 +10,6 @@ class StatisticsWriter:
         f = open(file, "w")
         f.write("Name\tValue")
         for name, value in stats.get_stats().items():
-            f.write("\n" + name + "\t" + value)
+            f.write("\n" + name + "\t" + str(value))
         f.close()
 
