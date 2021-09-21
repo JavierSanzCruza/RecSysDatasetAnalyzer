@@ -20,8 +20,6 @@ from src.main.python.data.filters import *
 
 import math
 import typing
-import numpy as np
-
 
 class Rating(IndividualProperty):
     """
@@ -160,10 +158,8 @@ class Rating(IndividualProperty):
         values = dict()
         for user in self.rating_matrix.get_users():
             if user_filter(user):
-                values[user] = np.average(
-                    (rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
-                     if item_filter(item) and rating_filter(user, item, rating)
-                     ))
+                values[user] = self.average_user(user, relevant=relevant, item_filter=item_filter,
+                                                 rating_filter=rating_filter)
 
         return values
 
@@ -256,8 +252,13 @@ class Rating(IndividualProperty):
         if not self.rating_matrix.get_users().__contains__(user):
             return math.nan
         else:
-            return np.average(rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
-                              if item_filter(item) and rating_filter(user, item, rating))
+            count = 0.0
+            total = 0.0
+            for item, rating in self.rating_matrix.get_user_ratings(user, relevant):
+                if item_filter(item) and rating_filter(user, item, rating):
+                    count += 1.0
+                    total += rating
+            return total/count
 
     def max_user(self,
                  user: typing.Any,
@@ -312,9 +313,14 @@ class Rating(IndividualProperty):
         if rating_filter is None:
             rating_filter = RatingFilter.default()
 
-        return np.average((sum(rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
-                               if item_filter(item) and rating_filter(user, item, rating))
-                           for user in self.rating_matrix.get_users() if user_filter(user)))
+        count = 0.0
+        total = 0.0
+        for user in self.rating_matrix.get_users():
+            if user_filter(user):
+                count += 1.0
+                total += sum(rating for item, rating in self.rating_matrix.get_user_ratings(user, relevant)
+                             if item_filter(item) and rating_filter(user, item, rating))
+        return total / count
 
     def max_over_users(self,
                        relevant: bool = False,
@@ -393,11 +399,8 @@ class Rating(IndividualProperty):
         values = dict()
         for item in self.rating_matrix.get_items():
             if item_filter(item):
-                values[item] = np.average(
-                    (rating for user, rating in self.rating_matrix.get_item_ratings(item, relevant)
-                     if user_filter(user) and rating_filter(user, item, rating)
-                     ))
-
+                values[item] = self.average_item(item, relevant=relevant, user_filter=user_filter,
+                                                 rating_filter=rating_filter)
         return values
 
     def max_items(self,
@@ -489,8 +492,15 @@ class Rating(IndividualProperty):
         if not self.rating_matrix.get_items().__contains__(item):
             return math.nan
         else:
-            return np.average(rating for user, rating in self.rating_matrix.get_item_ratings(item, relevant)
-                              if user_filter(user) and rating_filter(user, item, rating))
+            count = 0.0
+            total = 0.0
+
+            for user, rating in self.rating_matrix.get_item_ratings(item, relevant):
+                if user_filter(user) and rating_filter(user, item, rating):
+                    count += 1.0
+                    total += rating
+
+            return total / count
 
     def max_item(self,
                  item: typing.Any,
@@ -545,9 +555,14 @@ class Rating(IndividualProperty):
         if rating_filter is None:
             rating_filter = RatingFilter.default()
 
-        return np.average((sum(rating for user, rating in self.rating_matrix.get_item_ratings(item, relevant)
-                               if user_filter(user) and rating_filter(user, item, rating))
-                           for item in self.rating_matrix.get_items() if item_filter(item)))
+        count = 0.0
+        total = 0.0
+        for item in self.rating_matrix.get_items():
+            if item_filter(item):
+                count += 1.0
+                total += sum(rating for user, rating in self.rating_matrix.get_item_ratings(item, relevant)
+                             if user_filter(user) and rating_filter(user, item, rating))
+        return total / count
 
     def max_over_items(self,
                        relevant: bool = False,

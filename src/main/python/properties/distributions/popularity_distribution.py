@@ -15,6 +15,8 @@ __copyright__ = """
 """
 __license__ = 'Mozilla Public License v. 2.0'
 
+from src.main.python.data import RatingMatrix
+
 
 class PopularityDistribution:
     """
@@ -22,56 +24,39 @@ class PopularityDistribution:
     of ratings per item (it just stores these number, sorted from larger to smaller).
     """
 
-    def __init__(self, rating_matrix):
+    def __init__(self,
+                 rating_matrix: RatingMatrix):
         """
         Constructor. Finds the probability distribution of the dataset.
         :param rating_matrix: the rating matrix of the dataset.
         """
         self.rating_matrix = rating_matrix
 
-    def get_user_distribution(self):
+    def get_user_distribution(self,
+                              relevant: bool = False):
         """
         Obtains the popularity distribution for the users (i.e. the number of items each user has rated, sorted by
         descending number of ratings).
+        :param relevant: (OPTIONAL) True if we want to limit the distribution to relevant ratings, False otherwise.
+        :return: the popularity distribution for the users.
         """
         distribution = list(map(
-            lambda user_id: self.rating_matrix.get_user_ratings(user_id).__len__(),
+            lambda user_id: self.rating_matrix.get_num_user_ratings(user_id, relevant),
             self.rating_matrix.get_users())
         )
         distribution.sort(reverse=True)
         return distribution
 
-    def get_relevant_user_distribution(self):
-        """
-        Obtains the popularity distribution for the users (i.e. the number of items each user has relevantly rated,
-        sorted by descending number of ratings).
-        """
-        distribution = list(map(
-            lambda user_id: self.rating_matrix.get_relevant_user_ratings(user_id).__len__(),
-            self.rating_matrix.get_users())
-        )
-        distribution.sort(reverse=True)
-        return distribution
-
-    def get_item_distribution(self):
+    def get_item_distribution(self,
+                              relevant: bool = False):
         """
         Obtains the popularity distribution for the items (i.e. the number of users who have rated each item, sorted by
         descending number of ratings).
+        :param relevant: (OPTIONAL) True if we want to limit the distribution to relevant ratings, False otherwise.
+        :return: the popularity distribution for the items.
         """
         distribution = list(map(
-            lambda item_id: self.rating_matrix.get_item_ratings(item_id).__len__(),
-            self.rating_matrix.get_items())
-        )
-        distribution.sort(reverse=True)
-        return distribution
-
-    def get_relevant_item_distribution(self):
-        """
-        Obtains the popularity distribution for the items (i.e. the number of users who have rated each item
-        as relevant, sorted by descending number of ratings).
-        """
-        distribution = list(map(
-            lambda item_id: self.rating_matrix.get_relevant_item_ratings(item_id).__len__(),
+            lambda item_id: self.rating_matrix.get_num_item_ratings(item_id, relevant),
             self.rating_matrix.get_items())
         )
         distribution.sort(reverse=True)

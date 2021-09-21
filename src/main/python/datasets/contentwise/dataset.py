@@ -90,8 +90,8 @@ class ContentWiseDataset:
         :return: the fully loaded ContentWise dataset.
         """
 
-        items = typing.Dict[int, ContentWiseItem]()
-        series = typing.Dict[int, ContentWiseSeries]()
+        items = dict()
+        series = dict()
 
         user_2_item = RatingMatrix(0.0, True, True)
         user_2_series = RatingMatrix(0.0, True, True)
@@ -110,86 +110,82 @@ class ContentWiseDataset:
             csv_reader = csv.DictReader(csv_file)
             line_count = 0
             for record in csv_reader:
-                if line_count == 0:
-                    line_count += 1
-                else:
-                    ts = int(record["utc_ts_milliseconds"])
-                    user = int(record["user_id"])
-                    item = int(record["item_id"])
-                    series_id = int(record["series_id"])
-                    episode = int(record["episode_number"])
-                    length = int(record["series_length"])
-                    item_type = ContentWiseItemType.from_value(int(record["item_type"]))
-                    rec_id = int(record["recommendation_id"])
+                ts = int(record["utc_ts_milliseconds"])
+                user = int(record["user_id"])
+                item = int(record["item_id"])
+                series_id = int(record["series_id"])
+                episode = int(record["episode_number"])
+                length = int(record["series_length"])
+                item_type = ContentWiseItemType.from_value(int(record["item_type"]))
+                rec_id = int(record["recommendation_id"])
 
-                    from_impr = rec_id >= 0
+                from_impr = rec_id >= 0
 
-                    # In this loader, we assume that all the interactions are positive feedback.
-                    # STEP 1: We add the a) user and b) item to their indexes
-                    items[item] = ContentWiseItem(item, series_id, episode, item_type)
-                    series[series_id] = ContentWiseSeries(series_id, length)
+                # In this loader, we assume that all the interactions are positive feedback.
+                # STEP 1: We add the a) user and b) item to their indexes
+                items[item] = ContentWiseItem(item, series_id, episode, item_type)
+                series[series_id] = ContentWiseSeries(series_id, length)
 
-                    user_2_item.add_user(user)
-                    user_2_item.add_item(item)
-                    user_2_item_impr.add_user(user)
-                    user_2_item_impr.add_item(item)
+                user_2_item.add_user(user)
+                user_2_item.add_item(item)
+                user_2_item_impr.add_user(user)
+                user_2_item_impr.add_item(item)
 
-                    user_2_series.add_user(user)
-                    user_2_series.add_item(series_id)
-                    user_2_series_impr.add_user(user)
-                    user_2_series_impr.add_item(series_id)
+                user_2_series.add_user(user)
+                user_2_series.add_item(series_id)
+                user_2_series_impr.add_user(user)
+                user_2_series_impr.add_item(series_id)
 
-                    impr.add_user(user)
-                    impr.add_item(item)
+                impr.add_user(user)
+                impr.add_item(series_id)
 
-                    ret_item = user_2_item.rate(user, item, 1.0)
-                    ret_series = user_2_series.rate(user, series_id, 1.0)
-                    if ret_item == AddingReturn.ADDED:
-                        user_2_item_ts = user_2_item_ts.add_timepoint(user, item, ts)
-                    if ret_series == AddingReturn.ADDED:
-                        user_2_series_ts = user_2_series_ts.add_timepoint(user, series_id, ts)
+                ret_item = user_2_item.rate(user, item, 1.0)
+                ret_series = user_2_series.rate(user, series_id, 1.0)
+                if ret_item == AddingReturn.ADDED:
+                    user_2_item_ts.add_timepoint(user, item, ts)
+                if ret_series == AddingReturn.ADDED:
+                    user_2_series_ts.add_timepoint(user, series_id, ts)
 
-                    if from_impr:
-                        rec_2_user[rec_id] = user
-                        ret_item = user_2_item_impr.rate(user, item, 1.0)
-                        ret_series = user_2_series_impr.rate(user, series_id, 1.0)
-                        if ret_item:
-                            user_2_item_impr_ts.add_timepoint(user, item, ts)
-                        if ret_series:
-                            user_2_series_impr_ts.add_timepoint(user, series_id, ts)
+                if from_impr:
+                    rec_2_user[rec_id] = user
+                    ret_item = user_2_item_impr.rate(user, item, 1.0)
+                    ret_series = user_2_series_impr.rate(user, series_id, 1.0)
+                    if ret_item:
+                        user_2_item_impr_ts.add_timepoint(user, item, ts)
+                    if ret_series:
+                        user_2_series_impr_ts.add_timepoint(user, series_id, ts)
+                line_count += 1
 
-        # Read the impressions with interactions
-        with open(impressions_direct_link_file, mode='r') as csv_file:
-            csv_reader = csv.DictReader(csv_file)
-            line_count = 0
-            for record in csv_reader:
-                if line_count == 0:
-                    line_count += 1
-                else:
+            # Read the impressions with interactions
+            with open(impressions_direct_link_file, mode='r') as csv_file:
+                csv_reader = csv.DictReader(csv_file)
+                line_count = 0
+                for record in csv_reader:
                     rec_id = int(record["recommendation_id"])
                     listed_impr = str(record["recommended_series_list"])
 
                     actual_list = listed_impr[1:len(listed_impr) - 1]
-                    impressions = actual_list.split("\\P{Alpha}+")
+                    impressions = actual_list.split()
+                    user_id = rec_2_user[rec_id]
                     for impression in impressions:
                         series_id = int(impression)
-                        impr.add_impression(rec_2_user[rec_id], series_id)
+                        impr.add_item(series_id)
+                        impr.add_impression(user_id, series_id)
+                    line_count += 1
 
         # Read the impressions without interactions
         with open(impressions_no_direct_link_file, mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
             line_count = 0
             for record in csv_reader:
-                if line_count == 0:
-                    line_count += 1
-                else:
-                    user = record["user_id"]
-                    listed_impr = str(record["recommended_series_list"])
+                user = record["user_id"]
+                listed_impr = str(record["recommended_series_list"])
 
-                    actual_list = list[1:len(listed_impr) - 1]
-                    impressions = actual_list.split("\\P{Alpha}+")
-                    for impression in impressions:
-                        impr.add_impression(user, int(impression))
+                actual_list = listed_impr[1:len(listed_impr) - 1]
+                impressions = actual_list.split()
+                for impression in impressions:
+                    impr.add_impression(user, int(impression))
+                line_count += 1
 
         return ContentWiseDataset(user_2_item, user_2_series, user_2_item_impr, user_2_series_impr, user_2_item_ts,
                                   user_2_series_ts, user_2_item_impr_ts, user_2_series_impr_ts,

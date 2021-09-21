@@ -50,22 +50,16 @@ class AbstractGiniIndex(GlobalProperty):
             aux_matrix = self.rating_matrix.filter(user_filter=user_filter, item_filter=item_filter,
                                                    rating_filter=rating_filter)
             pop = PopularityDistribution(aux_matrix)
-            return self.compute_relevant_index(pop) if relevant else self.compute_index(pop)
+            return self.compute_index(pop, relevant)
 
     @abstractmethod
-    def compute_index(self, pop: PopularityDistribution) -> float:
+    def compute_index(self,
+                      pop: PopularityDistribution,
+                      relevant: bool = False) -> float:
         """
         Given a popularity distribution, it computes the Gini index.
-        :param pop: the popularity distribution
-        :return: the value of the Gini index for the distribution.
-        """
-        pass
-
-    @abstractmethod
-    def compute_relevant_index(self, pop: PopularityDistribution) -> float:
-        """
-        Given a popularity distribution, it computes the Gini index, taking only the relevant ratings.
-        :param pop: the popularity distribution
+        :param pop: the popularity distribution.
+        :param relevant: (OPTIONAL) True if we limit ourselves to the relevant distribution, False otherwise.
         :return: the value of the Gini index for the distribution.
         """
         pass

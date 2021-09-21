@@ -204,14 +204,14 @@ class RatingMatrix:
         Obtains an iterator of the users in the system.
         :return: the iterator of the users in the system.
         """
-        return (user for user in self.get_users())
+        return (user for user in self.users)
 
     def get_items(self):
         """
         Obtains an iterator of the items in the system.
         :return: the iterator of the items in the system.
         """
-        return (item for item in self.get_items())
+        return (item for item in self.items)
 
     def get_rating(self,
                    user_id: int,

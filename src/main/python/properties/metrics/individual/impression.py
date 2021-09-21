@@ -18,8 +18,6 @@ __license__ = 'Mozilla Public License v. 2.0'
 import math
 import typing
 
-import numpy as np
-
 from src.main.python.data import Impressions, RatingMatrix
 from src.main.python.data.filters import *
 
@@ -35,7 +33,7 @@ class Impression:
         :param rating_matrix: the rating matrix.
         :param impressions: the impressions.
         """
-        super().__init__(rating_matrix)
+        self.rating_matrix = rating_matrix
         self.impressions = impressions
 
     def total(self,
@@ -62,7 +60,7 @@ class Impression:
         if impressions_filter is None:
             impressions_filter = ImpressionsFilter.default()
 
-        return sum((sum(1.0 for item, rating in self.impressions.get_user_impressions(user)
+        return sum((sum(1.0 for item in self.impressions.get_user_impressions(user)
                         if item_filter(item) and impressions_filter(user, item))
                     for user in self.impressions.get_users() if user_filter(user)))
 
@@ -91,7 +89,7 @@ class Impression:
 
         for user in self.impressions.get_users():
             if user_filter(user):
-                for item, rating in self.impressions.get_user_impressions(user):
+                for item in self.impressions.get_user_impressions(user):
                     if item_filter(item) and impressions_filter(user, item):
                         return 1.0
         return math.nan
@@ -151,7 +149,7 @@ class Impression:
 
             for user in self.impressions.get_users():
                 if user_filter(user):
-                    values[user] = sum(1.0 for item, rating in self.impressions.get_user_impressions(user)
+                    values[user] = sum(1.0 for item in self.impressions.get_user_impressions(user)
                                        if item_filter(item) and impressions_filter(user, item))
 
     def average_users(self,
@@ -177,7 +175,7 @@ class Impression:
         for user in self.impressions.get_users():
             if user_filter(user):
                 values[user] = math.nan
-                for item, rating in self.impressions.get_user_impressions(user):
+                for item in self.impressions.get_user_impressions(user):
                     if item_filter(item) and impressions_filter(user, item):
                         values[user] = 1.0
                         break
@@ -236,7 +234,7 @@ class Impression:
             if impressions_filter is None:
                 impressions_filter = ImpressionsFilter.default()
 
-            return sum(1.0 for item, rating in self.impressions.get_user_impressions(user)
+            return sum(1.0 for item in self.impressions.get_user_impressions(user)
                        if item_filter(item) and impressions_filter(user, item))
 
     def average_user(self,
@@ -259,7 +257,7 @@ class Impression:
         if not self.impressions.get_users().__contains__(user):
             return math.nan
         else:
-            for item, rating in self.impressions.get_user_impressions(user):
+            for item in self.impressions.get_user_impressions(user):
                 if item_filter(item) and impressions_filter(user, item):
                     return 1.0
             return math.nan
@@ -314,9 +312,14 @@ class Impression:
         if impressions_filter is None:
             impressions_filter = ImpressionsFilter.default()
 
-        return np.average((sum(1.0 for item, rating in self.impressions.get_user_impressions(user)
-                               if item_filter(item) and impressions_filter(user, item))
-                           for user in self.impressions.get_users() if user_filter(user)))
+        count = 0.0
+        total = 0.0
+        for user in self.impressions.get_users():
+            if user_filter(user):
+                count += 1.0
+                total += sum(1.0 for item in self.impressions.get_user_impressions(user)
+                             if item_filter(item) and impressions_filter(user, item))
+        return total / count
 
     def max_over_users(self,
                        user_filter: typing.Callable[[int], bool] = None,
@@ -330,8 +333,16 @@ class Impression:
         :param impressions_filter: (OPTIONAL) filter for selecting the impressions. By default, no filter is applied.
         :return: the maximum number of impressions across the users.
         """
-        return max((sum(1.0 for item, rating in self.impressions.get_user_impressions(user)
-                        if item_filter and impressions_filter(user, item))
+
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if impressions_filter is None:
+            impressions_filter = ImpressionsFilter.default()
+
+        return max((sum(1.0 for item in self.impressions.get_user_impressions(user)
+                        if item_filter(item) and impressions_filter(user, item))
                     for user in self.impressions.get_users() if user_filter(user)))
 
     def min_over_users(self,
@@ -346,8 +357,16 @@ class Impression:
         :param impressions_filter: (OPTIONAL) filter for selecting the impressions. By default, no filter is applied.
         :return: the minimum number of impressions across the users.
         """
-        return min((sum(1.0 for item, rating in self.impressions.get_user_impressions(user)
-                        if item_filter and impressions_filter(user, item))
+
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if impressions_filter is None:
+            impressions_filter = ImpressionsFilter.default()
+
+        return min((sum(1.0 for item in self.impressions.get_user_impressions(user)
+                        if item_filter(item) and impressions_filter(user, item))
                     for user in self.impressions.get_users() if user_filter(user)))
 
     def total_items(self,
@@ -378,7 +397,7 @@ class Impression:
 
             for item in self.impressions.get_items():
                 if item_filter(item):
-                    values[item] = sum(1.0 for user, rating in self.impressions.get_item_impressions(item)
+                    values[item] = sum(1.0 for user in self.impressions.get_item_impressions(item)
                                        if user_filter(user) and impressions_filter(user, item))
 
     def average_items(self,
@@ -404,7 +423,7 @@ class Impression:
         for item in self.impressions.get_items():
             if item_filter(item):
                 values[item] = math.nan
-                for user, rating in self.impressions.get_item_impressions(item):
+                for user in self.impressions.get_item_impressions(item):
                     if user_filter(user) and impressions_filter(user, item):
                         values[item] = 1.0
                         break
@@ -463,7 +482,7 @@ class Impression:
             if impressions_filter is None:
                 impressions_filter = ImpressionsFilter.default()
 
-            return sum(1.0 for user, rating in self.impressions.get_item_impressions(item)
+            return sum(1.0 for user in self.impressions.get_item_impressions(item)
                        if user_filter(user) and impressions_filter(user, item))
 
     def average_item(self,
@@ -486,7 +505,7 @@ class Impression:
         if not self.impressions.get_items().__contains__(item):
             return math.nan
         else:
-            for user, rating in self.impressions.get_item_impressions(item):
+            for user in self.impressions.get_item_impressions(item):
                 if user_filter(user) and impressions_filter(user, item):
                     return 1.0
             return math.nan
@@ -541,9 +560,14 @@ class Impression:
         if impressions_filter is None:
             impressions_filter = ImpressionsFilter.default()
 
-        return np.average((sum(1.0 for user, rating in self.impressions.get_item_impressions(item)
-                               if user_filter(user) and impressions_filter(user, item))
-                           for item in self.impressions.get_items() if item_filter(item)))
+        count = 0.0
+        total = 0.0
+        for item in self.impressions.get_items():
+            if item_filter(item):
+                count += 1.0
+                total += sum(1.0 for user in self.impressions.get_item_impressions(item)
+                             if user_filter(user) and impressions_filter(user, item))
+        return total / count
 
     def max_over_items(self,
                        user_filter: typing.Callable[[int], bool] = None,
@@ -557,7 +581,15 @@ class Impression:
         :param impressions_filter: (OPTIONAL) filter for selecting the impressions. By default, no filter is applied.
         :return: the maximum number of impressions across the items.
         """
-        return max((sum(1.0 for user, rating in self.impressions.get_item_impressions(item)
+
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if impressions_filter is None:
+            impressions_filter = ImpressionsFilter.default()
+
+        return max((sum(1.0 for user in self.impressions.get_item_impressions(item)
                         if user_filter(user) and impressions_filter(user, item))
                     for item in self.impressions.get_items() if item_filter(item)))
 
@@ -573,6 +605,13 @@ class Impression:
         :param impressions_filter: (OPTIONAL) filter for selecting the impressions. By default, no filter is applied.
         :return: the minimum number of impressions across the items.
         """
-        return min((sum(1.0 for user, rating in self.impressions.get_item_impressions(item)
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if impressions_filter is None:
+            impressions_filter = ImpressionsFilter.default()
+
+        return min((sum(1.0 for user in self.impressions.get_item_impressions(item)
                         if user_filter(user) and impressions_filter(user, item))
                     for item in self.impressions.get_items() if item_filter(item)))

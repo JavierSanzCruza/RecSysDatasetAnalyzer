@@ -16,32 +16,37 @@ __copyright__ = """
 __license__ = 'Mozilla Public License v. 2.0'
 
 from functools import reduce
+import typing
+
 
 class GiniIndex:
     """
-    Auxiliar class for computing the Gini index of
+    Auxiliar class for computing the Gini index of a list of values.
     """
+
     @staticmethod
-    def compute(list, sorted=True, reverse=False):
+    def compute(values: typing.List[float],
+                is_sorted: bool = True,
+                reverse: bool = False):
         """
         Computes the Gini index of a list of values.
-        :param list: the list of values
-        :param sorted: True if the list is sorted, False otherwise.
+        :param values: the list of values
+        :param is_sorted: True if the list is sorted, False otherwise.
         :param reverse: True if the list is sorted, but in reverse order.
         :return: the value of the Gini index.
         """
 
         gini = 0.0
-        size = len(list)
-        sum = reduce((lambda x, y: x + y), list)
+        size = len(values)
+        sum = reduce((lambda x, y: x + y), values)
 
-        if not sorted:
+        if not is_sorted:
             # We copy the list:
-            auxlist = [x for x in list]
+            auxlist = [x for x in values]
             auxlist.sort()
             reverse = False
         else:
-            auxlist = list
+            auxlist = values
 
         if reverse:
             for i in range(0, size):
