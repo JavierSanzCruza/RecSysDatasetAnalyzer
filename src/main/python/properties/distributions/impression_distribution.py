@@ -34,7 +34,7 @@ class ImpressionsDistribution:
         descending number of times they have been recommended to them).
         """
         distribution = list(map(
-            lambda user_id: self.impressions.get_user_impressions(user_id).__len__(),
+            lambda user_id: self.impressions.get_num_user_impressions(user_id),
             self.impressions.get_users())
         )
         distribution.sort(reverse=True)
@@ -46,7 +46,7 @@ class ImpressionsDistribution:
         descending number of times they have been recommended).
         """
         distribution = list(map(
-            lambda item_id: self.impressions.get_item_impressions(item_id).__len__(),
+            lambda item_id: self.impressions.get_num_item_impressions(item_id),
             self.impressions.get_items())
         )
         distribution.sort(reverse=True)

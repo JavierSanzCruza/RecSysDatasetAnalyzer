@@ -26,10 +26,6 @@ class UserGiniIndex(AbstractGiniIndex):
     Implementation of the Gini index, measured over the items. A value close to 1 means a highly skewed distribution,
     whereas values close to 0 indicate balanced ones.
     """
-    def compute_index(self, pop: PopularityDistribution) -> float:
-        distr = pop.get_user_distribution()
-        return GiniIndex.compute(distr, True, True)
-
-    def compute_relevant_index(self, pop) -> float:
-        distr = pop.get_relevant_user_distribution()
+    def compute_index(self, pop: PopularityDistribution, relevant: bool = False) -> float:
+        distr = pop.get_user_distribution(relevant=relevant)
         return GiniIndex.compute(distr, True, True)

@@ -38,7 +38,7 @@ class AbstractGiniIndex(GlobalProperty):
                 ) -> float:
         if user_filter is None and item_filter is None and rating_filter is None:
             pop = PopularityDistribution(self.rating_matrix)
-            return self.compute_relevant_index(pop) if relevant else self.compute_index(pop)
+            return self.compute_index(pop, relevant=relevant)
         else:
             if user_filter is None:
                 user_filter = UserFilter.default
@@ -50,7 +50,7 @@ class AbstractGiniIndex(GlobalProperty):
             aux_matrix = self.rating_matrix.filter(user_filter=user_filter, item_filter=item_filter,
                                                    rating_filter=rating_filter)
             pop = PopularityDistribution(aux_matrix)
-            return self.compute_index(pop, relevant)
+            return self.compute_index(pop, relevant=relevant)
 
     @abstractmethod
     def compute_index(self,

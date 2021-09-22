@@ -281,6 +281,7 @@ class Interaction(IndividualProperty):
                             if item_filter(item) and rating_filter(user, item, rating))
                 if score > maximum:
                     maximum = score
+        return maximum
 
     def min_over_users(self,
                        relevant: bool = False,
@@ -303,6 +304,7 @@ class Interaction(IndividualProperty):
                             if item_filter(item) and rating_filter(user, item, rating))
                 if score < minimum:
                     minimum = score
+        return minimum
 
     def total_items(self,
                     relevant: bool = False,
@@ -331,6 +333,7 @@ class Interaction(IndividualProperty):
                 if item_filter(item):
                     values[item] = sum(1.0 for user, rating in self.rating_matrix.get_item_ratings(item, relevant)
                                        if user_filter(user) and rating_filter(user, item, rating))
+        return values
 
     def average_items(self,
                       relevant: bool = False,
@@ -491,9 +494,6 @@ class Interaction(IndividualProperty):
                        item_filter: typing.Callable[[int], bool] = None,
                        rating_filter: typing.Callable[[int, int, float], bool] = None
                        ):
-
-        if user_filter is None and item_filter is None and rating_filter is None:
-            return float(self.rating_matrix.get_num_ratings(relevant)) / float(self.rating_matrix.get_num_items())
 
         if user_filter is None:
             user_filter = UserFilter.default()

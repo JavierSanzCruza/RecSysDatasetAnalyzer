@@ -27,5 +27,5 @@ class ItemGiniIndex(AbstractGiniIndex):
     whereas values close to 0 indicate balanced ones.
     """
     def compute_index(self, pop: PopularityDistribution, relevant: bool = False) -> float:
-        distr = pop.get_item_distribution(relevant)
+        distr = pop.get_item_distribution(relevant=relevant)
         return GiniIndex.compute(distr, True, True)

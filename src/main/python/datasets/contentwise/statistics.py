@@ -196,8 +196,8 @@ class ContentWiseStatistics(Statistics):
         impr = Impression(dataset.get_user_2_series_interactions(), dataset.get_impressions())
         self.add_stat(ContentWiseStatistics.AVG_IMPR_PER_USER, impr.average_over_users())
         self.add_stat(ContentWiseStatistics.MAX_IMPR_PER_USER, impr.max_over_users())
-        self.add_stat(ContentWiseStatistics.MAX_IMPR_PER_USER, impr.min_over_users())
+        self.add_stat(ContentWiseStatistics.MIN_IMPR_PER_USER, impr.min_over_users())
 
         self.add_stat(ContentWiseStatistics.AVG_IMPR_PER_SERIES, impr.average_over_items())
         self.add_stat(ContentWiseStatistics.MAX_IMPR_PER_SERIES, impr.max_over_items())
-        self.add_stat(ContentWiseStatistics.MAX_IMPR_PER_SERIES, impr.min_over_items())
+        self.add_stat(ContentWiseStatistics.MIN_IMPR_PER_SERIES, impr.min_over_items())

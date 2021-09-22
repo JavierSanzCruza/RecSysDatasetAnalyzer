@@ -38,7 +38,7 @@ class GiniIndex:
 
         gini = 0.0
         size = len(values)
-        sum = reduce((lambda x, y: x + y), values)
+        total_sum = reduce((lambda x, y: x + y), values)
 
         if not is_sorted:
             # We copy the list:
@@ -50,17 +50,12 @@ class GiniIndex:
 
         if reverse:
             for i in range(0, size):
-                val = (2.0 * i - size + 1.0) * auxlist[i]
-                val /= sum
+                val = (2.0 * (size - i) - size - 1.0) * auxlist[i]
+                val /= total_sum
                 gini += val
         else:
             for i in range(0, size):
                 val = (2.0 * i - size + 1.0) * auxlist[i]
-                val /= sum
+                val /= total_sum
                 gini += val
-            for i in range(0, size):
-                val = (2.0 * (size - i) - size - 1.0) * auxlist[i]
-                val /= sum
-                gini += val
-
         return gini / (size - 1.0)
