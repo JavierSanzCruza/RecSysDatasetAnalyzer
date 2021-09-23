@@ -101,9 +101,10 @@ elif dataset == REPLAYER:
     time_a = time.time()
 
     inter = sys.argv[2]
+    min_ratings = int(sys.argv[4] if len(sys.argv) > 4 else 0)
 
     # Step 1: read the dataset.
-    data = ReplayerDataset.load_yahoo_r6b(inter)
+    data = ReplayerDataset.load_yahoo_r6b(inter, min_interactions_per_user=min_ratings)
     time_b = time.time()
     print("Data read (" + str(time_b - time_a) + "s.)")
 
@@ -116,6 +117,7 @@ elif dataset == REPLAYER:
     # Step 3: print the popularity distributions
     pop = PopularityDistribution(data.get_user_2_item_interactions())
     PopularityDistributionWriter.write(pop, sys.argv[3] + "pop-user-item.txt")
+
 
     time_b = time.time()
     print("Popularity distributions computed (" + str(time_b - time_a) + "s.)")

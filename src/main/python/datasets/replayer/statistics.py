@@ -106,8 +106,8 @@ class ReplayerStatistics(Statistics):
         impr = Impression(dataset.get_user_2_item_interactions(), dataset.get_impressions())
         self.add_stat(ReplayerStatistics.AVG_IMPR_PER_USER, impr.average_over_users())
         self.add_stat(ReplayerStatistics.MAX_IMPR_PER_USER, impr.max_over_users())
-        self.add_stat(ReplayerStatistics.MAX_IMPR_PER_USER, impr.min_over_users())
+        self.add_stat(ReplayerStatistics.MIN_IMPR_PER_USER, impr.min_over_users())
 
         self.add_stat(ReplayerStatistics.AVG_IMPR_PER_ITEM, impr.average_over_items())
         self.add_stat(ReplayerStatistics.MAX_IMPR_PER_ITEM, impr.max_over_items())
-        self.add_stat(ReplayerStatistics.MAX_IMPR_PER_ITEM, impr.min_over_items())
+        self.add_stat(ReplayerStatistics.MIN_IMPR_PER_ITEM, impr.min_over_items())

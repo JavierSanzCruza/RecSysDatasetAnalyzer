@@ -1,3 +1,4 @@
+from src.main.python.data.filters import UserFilter, ItemFilter
 from src.main.python.properties.distributions.popularity_distribution import PopularityDistribution
 from src.main.python.properties.distributions.temporal_distribution import TemporalDistribution
 

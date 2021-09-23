@@ -17,6 +17,10 @@ __license__ = 'Mozilla Public License v. 2.0'
 
 import math
 
+import typing
+
+from src.main.python.data.filters import UserFilter, ItemFilter
+
 
 class TemporalDistribution:
     """
@@ -69,3 +73,27 @@ class TemporalDistribution:
             self.distribution.sort(key=lambda x: x[2])
             self.is_sorted = True
         return [(x[1], x[2]) for x in self.distribution]
+
+    def filter(self,
+               user_filter: typing.Callable[[int], bool] = None,
+               item_filter: typing.Callable[[int], bool] = None,
+               ):
+        """
+        Obtains a proxy rating matrix containing only a fraction of the ratings.
+        :param user_filter: (OPTIONAL) a filter for selecting the users to keep. By default, no filter is applied.
+        :param item_filter: (OPTIONAL) a filter for selecting the items to keep. By default, no filter is applied.
+        :returns: a rating matrix containing the selected ratings.
+        """
+
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+
+        aux_matrix = TemporalDistribution()
+
+        for user, item, ts in self.distribution:
+            if user_filter(user) and item_filter(item):
+                aux_matrix.add_timepoint(user, item, ts)
+
+        return aux_matrix

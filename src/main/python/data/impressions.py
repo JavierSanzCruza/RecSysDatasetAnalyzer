@@ -15,7 +15,10 @@ __copyright__ = """
 """
 __license__ = 'Mozilla Public License v. 2.0'
 
+import typing
+
 from .adding_return import AddingReturn
+from .filters import UserFilter, ItemFilter, RatingFilter, ImpressionsFilter
 
 
 class Impressions:
@@ -140,3 +143,36 @@ class Impressions:
         :return: the number of impressions in which the item appears.
         """
         return len(self.item_impressions.get(item, []))
+
+    def filter(self,
+               user_filter: typing.Callable[[int], bool] = None,
+               item_filter: typing.Callable[[int], bool] = None,
+               impressions_filter: typing.Callable[[int, int], bool] = None
+               ):
+        """
+        Obtains a proxy rating matrix containing only a fraction of the ratings.
+        :param user_filter: (OPTIONAL) a filter for selecting the users to keep. By default, no filter is applied.
+        :param item_filter: (OPTIONAL) a filter for selecting the items to keep. By default, no filter is applied.
+        :param impressions_filter: (OPTIONAL) a filter for selecting the impressions to keep.
+                                    By default, no filter is applied.
+        :returns: a rating matrix containing the selected ratings.
+        """
+
+        if user_filter is None:
+            user_filter = UserFilter.default()
+        if item_filter is None:
+            item_filter = ItemFilter.default()
+        if impressions_filter is None:
+            impressions_filter = ImpressionsFilter.default()
+
+        aux_matrix = Impressions()
+
+        for item in filter(item_filter, self.get_items()):
+            aux_matrix.add_item(item)
+        for user in filter(user_filter, self.get_users()):
+            aux_matrix.add_user(user)
+            for item in self.get_user_impressions(user):
+                if item_filter(item) and impressions_filter(user, item):
+                    aux_matrix.add_impression(user, item)
+
+        return aux_matrix

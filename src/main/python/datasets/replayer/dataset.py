@@ -42,7 +42,8 @@ class ReplayerDataset:
         self.impressions = impressions
 
     @staticmethod
-    def load_yahoo_r6b(interactions_folder: str):
+    def load_yahoo_r6b(interactions_folder: str,
+                       min_interactions_per_user: int = 0):
         """
         Loads the Yahoo! R6B dataset.
         :param interactions_folder: a directory containing the different files.
@@ -54,11 +55,13 @@ class ReplayerDataset:
         items = dict()
         users = dict()
 
+        user_count = dict()
+
         files = [f for f in listdir(interactions_folder) if
                  isfile(join(interactions_folder, f)) and not f == "README.txt"]
 
         for file in files:
-            f = open(file, mode='r')
+            f = open(join(interactions_folder, file), mode='r')
             for record in f:
                 splitted = record.split(" ")
                 timestamp = int(splitted[0])
@@ -69,8 +72,8 @@ class ReplayerDataset:
                 is_current_user = False
                 is_empty_user = True
                 user = list()
-                for i in range(0, 134):
-                    user[i] = '0'
+                for i in range(0, 135):
+                    user.append('0')
                 for i in range(3, len(splitted)):
                     if splitted[i] == "|user":
                         is_current_user = True
@@ -82,20 +85,22 @@ class ReplayerDataset:
                         idx = int(splitted[i])
                         if idx > 1:
                             is_empty_user = False
-                            user[idx - 2] = True
+                            user[idx - 2] = '1'
 
                 # If we can identify the user from its features:
                 if not is_empty_user:
                     # First, we store the user.
-                    user_str = str(user)
+                    user_str = ''.join(user)
 
                     if not users.__contains__(user_str):
                         user_id = len(users)
                         users[user_str] = user_id
                         user_2_item.add_user(user_id)
                         impr.add_user(user_id)
+                        user_count[user_id] = 1
                     else:
                         user_id = users[user_str]
+                        user_count[user_id] += 1
 
                     # Then, we store the item.
                     if not items.__contains__(item):
@@ -120,7 +125,15 @@ class ReplayerDataset:
                             item_id = items[item_str]
                         impr.add_impression(user_id, item_id)
 
-        return ReplayerDataset(user_2_item, user_2_item_ts, impr)
+        # Now, we check whether we want to limit the dataset to those users with, at least, X impressions,
+        # and filter the dataset appropriately.
+        if min_interactions_per_user <= 0:
+            return ReplayerDataset(user_2_item, user_2_item_ts, impr)
+        else:
+            aux_dataset = user_2_item.filter(user_filter=lambda u: user_count[u] >= min_interactions_per_user)
+            aux_dataset_ts = user_2_item_ts.filter(user_filter=lambda u: user_count[u] >= min_interactions_per_user)
+            aux_impr = impr.filter(user_filter=lambda u: user_count[u] >= min_interactions_per_user)
+            return ReplayerDataset(aux_dataset, aux_dataset_ts, aux_impr)
 
     def num_users(self):
         """
