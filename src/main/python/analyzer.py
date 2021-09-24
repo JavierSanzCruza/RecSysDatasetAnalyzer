@@ -64,8 +64,8 @@ if dataset == CONTENTWISE:
 
     # Step 4: print the distributions for the impressions:
     impr = ImpressionsDistribution(data.get_impressions())
-    ImpressionDistributionWriter.write_user_distribution(impr, "impr-user.txt")
-    ImpressionDistributionWriter.write_item_distribution(impr, "impr-series.txt")
+    ImpressionDistributionWriter.write_user_distribution(impr, sys.argv[5] + "impr-user.txt")
+    ImpressionDistributionWriter.write_item_distribution(impr, sys.argv[5] + "impr-series.txt")
     time_b = time.time()
     print("Impressions distributions computed (" + str(time_b - time_a) + "s.)")
 
@@ -124,8 +124,8 @@ elif dataset == REPLAYER:
 
     # Step 4: print the distributions for the impressions:
     impr = ImpressionsDistribution(data.get_impressions())
-    ImpressionDistributionWriter.write_user_distribution(impr, "impr-user.txt")
-    ImpressionDistributionWriter.write_item_distribution(impr, "impr-items.txt")
+    ImpressionDistributionWriter.write_user_distribution(impr, sys.argv[3] + "impr-user.txt")
+    ImpressionDistributionWriter.write_item_distribution(impr, sys.argv[3] + "impr-items.txt")
     time_b = time.time()
     print("Impressions distributions computed (" + str(time_b - time_a) + "s.)")
 
